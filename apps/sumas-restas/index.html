@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sumas y restas paso a paso</title>
+<style>
+  :root{
+    --bg:#fff8ec; --ink:#2b2a33; --muted:#6b6878; --card:#ffffff; --line:#f0e2c8;
+    --accent:#ff6b4a; --accent-d:#e0502f; --ok:#1f9d63; --bad:#d6453d; --hl:#fff1cf;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);
+       min-height:100vh;display:flex;justify-content:center;padding:18px 12px 40px}
+  main{width:100%;max-width:500px;text-align:center}
+  h1{font-size:1.6rem;margin:4px 0 14px}
+  .settings{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:12px}
+  .seg{display:inline-flex;background:var(--card);border:2px solid var(--line);border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:.9rem;padding:6px 13px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .stats{display:flex;gap:8px;justify-content:center;margin:4px 0 12px}
+  .stat{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:5px 12px;min-width:96px}
+  .stat b{display:block;font-size:1.2rem}
+  .stat span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stage{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:18px 12px 16px}
+  .board{display:grid;gap:4px;max-width:360px;margin:0 auto}
+  .cell{display:flex;align-items:center;justify-content:center;min-height:62px;font-size:2.2rem;font-weight:800;
+        border-radius:10px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cell.lab{min-height:22px;font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.04em}
+  .cell.carry{min-height:34px;font-size:1.3rem;color:var(--accent)}
+  .cell.sign{color:var(--accent)}
+  .cell.ans{border-top:5px solid var(--ink);border-radius:0 0 10px 10px;min-height:70px;color:var(--ok)}
+  .cell.act{background:var(--hl)}
+  .cell.mod{font-size:1.7rem}
+  .cell s{color:var(--muted);font-size:1.2rem;margin-right:5px;text-decoration-thickness:3px}
+  .cell .newv{color:var(--accent)}
+  .cell input{width:100%;max-width:74px;font:inherit;font-size:1.8rem;font-weight:800;text-align:center;padding:6px 2px;
+              border:3px solid var(--accent);border-radius:12px;background:#fff;color:var(--ink)}
+  .cell input:focus{outline:none;box-shadow:0 0 0 4px #ff6b4a33}
+  .prompt{font-size:1.2rem;font-weight:700;margin:16px 6px 4px;min-height:3.2rem}
+  .feedback{min-height:2.6rem;font-size:1.02rem;font-weight:700;margin:2px 6px 8px}
+  .ok{color:var(--ok)} .bad{color:var(--bad)}
+  button.main{font:inherit;font-weight:700;font-size:1.15rem;color:#fff;background:var(--accent);border:0;border-radius:14px;
+              padding:13px 22px;cursor:pointer;box-shadow:0 4px 0 var(--accent-d);width:100%}
+  button.main:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-d)}
+  .links{display:flex;gap:18px;justify-content:center;margin-top:10px}
+  button.ghost{font:inherit;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.95rem}
+  button.ghost[hidden]{display:none}
+  .back{display:inline-block;margin-top:18px;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+  <h1>➕➖ Sumas y restas</h1>
+
+  <div class="settings">
+    <div class="seg" role="group" aria-label="Operación" data-group="op">
+      <button data-v="+" aria-pressed="true">Sumas</button>
+      <button data-v="-" aria-pressed="false">Restas</button>
+    </div>
+    <div class="seg" role="group" aria-label="Llevadas" data-group="carry">
+      <button data-v="no" aria-pressed="true">Sin llevadas</button>
+      <button data-v="si" aria-pressed="false">Con llevadas</button>
+    </div>
+    <div class="seg" role="group" aria-label="Cifras" data-group="n">
+      <button data-v="2" aria-pressed="true">2 cifras</button>
+      <button data-v="3" aria-pressed="false">3 cifras</button>
+      <button data-v="4" aria-pressed="false">4 cifras</button>
+    </div>
+  </div>
+
+  <div class="stats" aria-live="polite">
+    <div class="stat"><b id="hechos">0</b><span>Hechos</span></div>
+    <div class="stat"><b id="perfectos">0</b><span>Sin fallos ⭐</span></div>
+  </div>
+
+  <section class="stage">
+    <div class="board" id="board"></div>
+    <div class="prompt" id="prompt"></div>
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <button class="main" id="primary">Comprobar</button>
+    <div class="links">
+      <button class="ghost" id="hint">Ver la respuesta</button>
+      <button class="ghost" id="skip">Otro ejercicio</button>
+    </div>
+  </section>
+
+  <a class="back" href="../../">← Todas las aplicaciones</a>
+</main>
+
+<script>
+(function(){
+  var NAMES = ['Unidades','Decenas','Centenas','Millares'];
+  var SHORT = ['U','D','C','UM'];
+  var FROM  = ['','las decenas','las centenas','los millares'];
+  var CONV  = ['','1 decena = 10 unidades','1 centena = 10 decenas','1 millar = 10 centenas'];
+  var cfg = {op:'+', carry:'no', n:2};
+  var P = null, S = null, hechos = 0, perfectos = 0;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var board=$('board'), promptEl=$('prompt'), fb=$('feedback'), primaryBtn=$('primary'), hintBtn=$('hint'), skipBtn=$('skip');
+
+  function rd(lo,hi){ return lo + Math.floor(Math.random()*(hi-lo+1)); }
+  function num(arr){ var s=0; for (var i=arr.length-1;i>=0;i--) s = s*10 + (arr[i]||0); return s; }
+  function carriesIn(a,b){ var c=0,k=0; for (var i=0;i<a.length;i++){ if (a[i]+b[i]+c>=10){k++;c=1;} else c=0; } return k; }
+  function borrowsIn(a,b){ var br=0,k=0; for (var i=0;i<a.length;i++){ var t=a[i]-br; if (t<b[i]){k++;br=1;} else br=0; } return k; }
+
+  // Los dígitos van de unidades (índice 0) a la cifra más alta.
+  function generate(){
+    var n = cfg.n, want = cfg.carry === 'si';
+    for (var tries=0; tries<5000; tries++){
+      var a=[], b=[];
+      for (var i=0;i<n;i++){
+        var top = (i===n-1);
+        if (cfg.op === '+'){ a[i]=rd(top?1:0,9); b[i]=rd(top?1:0,9); }
+        else               { a[i]=rd(1,9);       b[i]=rd(top?1:0,9); }
+      }
+      if (cfg.op === '+'){
+        var k = carriesIn(a,b);
+        if (want ? k>0 : k===0) return {op:'+', n:n, a:a, b:b};
+      } else {
+        if (num(a) <= num(b)) continue;
+        var m = borrowsIn(a,b);
+        if (want ? m>0 : m===0) return {op:'-', n:n, a:a, b:b};
+      }
+    }
+    return cfg.op==='+' ? {op:'+',n:2,a:[7,2],b:[5,1]} : {op:'-',n:2,a:[3,5],b:[8,2]};
+  }
+
+  function newProblem(){
+    P = generate();
+    S = {pos:0, carry:0, carries:[], res:[], lent:[], borrowed:[], errors:0, done:false};
+    fb.textContent=''; fb.className='feedback';
+    render();
+  }
+
+  function eff(p){ return P.a[p] - (S.lent[p]?1:0) + (S.borrowed[p]?10:0); }
+  function needBorrow(){ return P.op==='-' && !S.done && !S.borrowed[S.pos] && eff(S.pos) < P.b[S.pos]; }
+  function expected(){ return P.op==='+' ? P.a[S.pos]+P.b[S.pos]+S.carry : eff(S.pos)-P.b[S.pos]; }
+  function say(t, cls){ fb.textContent=t; fb.className='feedback'+(cls?' '+cls:''); }
+
+  function cell(cls, content, active){
+    var d = document.createElement('div');
+    d.className = 'cell '+cls+(active?' act':'');
+    if (content instanceof Node) d.appendChild(content);
+    else if (content != null) d.textContent = content;
+    return d;
+  }
+  function topCell(p, active){
+    var d = P.a[p], e = eff(p);
+    if (e === d) return cell('top', d, active);
+    var c = cell('top mod', null, active);
+    var s = document.createElement('s'); s.textContent = d;
+    var v = document.createElement('span'); v.className='newv'; v.textContent = e;
+    c.appendChild(s); c.appendChild(v);
+    return c;
+  }
+
+  function render(){
+    var n = P.n, add = P.op==='+', inp = null;
+    board.style.gridTemplateColumns = 'repeat('+(n+1)+', minmax(0,1fr))';
+    board.innerHTML = '';
+    var asking = !S.done && !needBorrow();
+    function each(fn){ for (var c=0;c<=n;c++){ var p=n-c; fn(p, !S.done && p===S.pos); } }
+
+    each(function(p,a){ board.appendChild(cell('lab', p<n ? SHORT[p] : '', a)); });
+    if (add) each(function(p,a){ board.appendChild(cell('carry', S.carries[p] ? S.carries[p] : '', a)); });
+    each(function(p,a){ board.appendChild(p<n ? topCell(p,a) : cell('top','',a)); });
+    each(function(p,a){ board.appendChild(p<n ? cell('bot', P.b[p], a) : cell('bot sign', add?'+':'−', a)); });
+    each(function(p,a){
+      if (p<n && S.res[p]!==undefined) board.appendChild(cell('ans', S.res[p], a));
+      else if (p===n && S.res[n]!==undefined) board.appendChild(cell('ans', S.res[n], a));
+      else if (p<n && a && asking){
+        inp = document.createElement('input');
+        inp.id='ans'; inp.type='text'; inp.inputMode='numeric'; inp.maxLength=2; inp.autocomplete='off';
+        inp.setAttribute('aria-label','Tu respuesta');
+        inp.addEventListener('input', function(){ inp.value = inp.value.replace(/[^0-9]/g,''); });
+        inp.addEventListener('keydown', function(e){ if (e.key==='Enter') primary(); });
+        board.appendChild(cell('ans', inp, a));
+      } else board.appendChild(cell('ans','',a));
+    });
+
+    // texto de la pregunta
+    var t, sym = add ? '+' : '−';
+    if (S.done){
+      t = num(P.a)+' '+sym+' '+num(P.b)+' = '+num(S.res)+' 🎉';
+    } else if (needBorrow()){
+      t = 'En '+NAMES[S.pos].toLowerCase()+' no se puede quitar '+P.b[S.pos]+' a '+eff(S.pos)+'. Pedimos prestado a '+FROM[S.pos+1]+': '+CONV[S.pos+1]+'.';
+    } else if (add){
+      t = NAMES[S.pos]+': '+P.a[S.pos]+' + '+P.b[S.pos]+(S.carry ? ' + '+S.carry+' (llevada)' : '')+' = ?';
+    } else {
+      t = NAMES[S.pos]+': '+eff(S.pos)+' − '+P.b[S.pos]+' = ?';
+    }
+    promptEl.textContent = t;
+
+    primaryBtn.textContent = S.done ? 'Otro ejercicio ➜' : needBorrow() ? 'Pedir prestado' : 'Comprobar';
+    hintBtn.hidden = !asking;
+    skipBtn.hidden = S.done;
+
+    if (inp) inp.focus({preventScroll:true});
+    else if (S.done || needBorrow()) primaryBtn.focus({preventScroll:true});
+  }
+
+  function primary(){
+    if (S.done) return newProblem();
+    if (needBorrow()) return doBorrow();
+    check();
+  }
+
+  function doBorrow(){
+    S.borrowed[S.pos] = true;
+    S.lent[S.pos+1] = true;
+    say('¡Hecho! Ahora arriba tenemos '+eff(S.pos)+'.', 'ok');
+    render();
+  }
+
+  function check(){
+    var inp = $('ans');
+    if (!inp) return;
+    var v = parseInt(inp.value,10);
+    if (isNaN(v)){ inp.focus(); return; }
+    var exp = expected(), pos = S.pos;
+    if (v !== exp){
+      S.errors++;
+      say(v > exp ? 'Te has pasado un poco. ¡Prueba otra vez! 💪' : 'Todavía no llegas. ¡Prueba otra vez! 💪', 'bad');
+      inp.select();
+      return;
+    }
+    if (P.op === '+'){
+      S.res[pos] = exp % 10;
+      if (exp >= 10){
+        S.carry = 1; S.carries[pos+1] = 1;
+        say('¡Muy bien! Escribimos '+(exp%10)+' y nos llevamos 1.', 'ok');
+      } else { S.carry = 0; say('¡Muy bien!', 'ok'); }
+    } else {
+      S.res[pos] = exp;
+      say('¡Muy bien!', 'ok');
+    }
+    S.pos++;
+    if (S.pos === P.n){
+      if (P.op==='+' && S.carry) S.res[P.n] = 1;
+      S.done = true;
+      hechos++; if (S.errors===0) perfectos++;
+      $('hechos').textContent = hechos; $('perfectos').textContent = perfectos;
+      say(S.errors===0 ? '¡Ejercicio terminado sin ningún fallo! ⭐' : '¡Ejercicio terminado! 🎉', 'ok');
+    }
+    render();
+  }
+
+  function hint(){
+    var inp = $('ans'); if (!inp) return;
+    S.errors++;
+    inp.value = expected();
+    say('Esta es la respuesta. Pulsa «Comprobar» para seguir.', '');
+    inp.focus();
+  }
+
+  primaryBtn.addEventListener('click', primary);
+  hintBtn.addEventListener('click', hint);
+  skipBtn.addEventListener('click', newProblem);
+
+  Array.prototype.forEach.call(document.querySelectorAll('.seg'), function(group){
+    var key = group.getAttribute('data-group');
+    Array.prototype.forEach.call(group.querySelectorAll('button'), function(btn){
+      btn.addEventListener('click', function(){
+        var v = btn.getAttribute('data-v');
+        cfg[key] = key==='n' ? parseInt(v,10) : v;
+        Array.prototype.forEach.call(group.querySelectorAll('button'), function(x){
+          x.setAttribute('aria-pressed', x===btn ? 'true':'false');
+        });
+        newProblem();
+      });
+    });
+  });
+
+  newProblem();
+})();
+</script>
+</body>
+</html>

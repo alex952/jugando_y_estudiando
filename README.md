@@ -27,3 +27,4 @@ Settings → Pages → *Deploy from a branch* → rama `main`, carpeta `/ (root)
 ## Apps
 
 - **Dados de multiplicar** — tira dos dados y multiplica.
+- **Sumas y restas paso a paso** — columnas con o sin llevadas, de 2 a 4 cifras.

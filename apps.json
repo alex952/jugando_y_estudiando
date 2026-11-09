@@ -5,5 +5,12 @@
     "emoji": "🎲",
     "description": "Tira dos dados y calcula el producto.",
     "topic": "Matemáticas"
+  },
+  {
+    "folder": "sumas-restas",
+    "title": "Sumas y restas paso a paso",
+    "emoji": "➕",
+    "description": "Operaciones en columnas, con o sin llevadas, columna a columna.",
+    "topic": "Matemáticas"
   }
 ]
