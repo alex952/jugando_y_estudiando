@@ -8,11 +8,12 @@ Pequeñas aplicaciones web estáticas (HTML + CSS + JS, sin dependencias) para r
 index.html            # portada: secciones por asignatura y filtros por etiqueta
 apps.json             # catálogo de apps (la portada lo lee)
 apps/<nombre>/        # una carpeta por app, con su index.html
+apps/_plantilla/      # punto de partida para una app nueva (no está en el catálogo)
 ```
 
 ## Añadir una app nueva
 
-1. Crea `apps/<nombre>/index.html` (autocontenida).
+1. Copia `apps/_plantilla/` a `apps/<nombre>/` (ya trae el estilo base y el enlace «← Todas las aplicaciones» para volver a la portada) y edita su `index.html`.
 2. Añade una entrada en `apps.json`:
 
    ```json
