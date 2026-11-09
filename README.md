@@ -1,4 +1,4 @@
-# Repaso en casa
+# Jugando y estudiando
 
 Pequeñas aplicaciones web estáticas (HTML + CSS + JS, sin dependencias) para repasar con los niños.
 
