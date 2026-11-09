@@ -46,3 +46,7 @@ Settings → Pages → *Deploy from a branch* → rama `main`, carpeta `/ (root)
 - **Tablas con cronómetro** — elige las tablas; 60 segundos o 10 preguntas, repaso de fallos y récord.
 - **Mi tabla** — ver una tabla o completarla: entera o con huecos, en orden o desordenada.
 - **Fracciones** — leer, pintar, comparar y fracción de un número.
+- **El reloj** — leer, escribir y poner la hora en un reloj de agujas (de en punto hasta cualquier minuto).
+- **Números hasta 1000** — bloques, centenas/decenas/unidades, comparar, ordenar, series y números con letras.
+- **Mapa de España** — comunidades autónomas y capitales (mapa © IGN, CC BY 4.0, generado con es-atlas).
+- **Ortografía con huecos** — palabras con huecos por sonido: b/v, g/j, g/gu/gü, c/qu/k, c/z, h, ll/y, r/rr, m/n.

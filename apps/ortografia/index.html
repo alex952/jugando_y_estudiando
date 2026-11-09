@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ortografía con huecos</title>
+<style>
+  :root{--bg:#fff8ec;--ink:#2b2a33;--muted:#6b6878;--card:#fff;--line:#f0e2c8;--accent:#ff6b4a;--accent-d:#e0502f;--ok:#1f9d63;--bad:#d6453d}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;justify-content:center;padding:18px 12px 40px}
+  main{width:100%;max-width:480px;text-align:center}
+  h1{font-size:1.6rem;margin:4px 0 12px}
+  [hidden]{display:none !important}
+  .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .cat{font:inherit;font-weight:800;font-size:1rem;padding:10px 2px;border-radius:14px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .cat small{display:block;font-weight:400;font-size:.68rem;color:var(--muted)}
+  .cat[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .cat[aria-pressed="true"] small{color:#d8d5e4}
+  .seg{display:inline-flex;background:#fff;border:2px solid var(--line);border-radius:999px;padding:3px;margin-bottom:10px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:.9rem;padding:6px 14px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .stage{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:16px 12px 16px}
+  .top{display:flex;justify-content:space-between;margin:0 6px 4px;font-weight:700;color:var(--muted);font-size:.9rem}
+  .clue{font-size:4rem;line-height:1.15;min-height:4.6rem;display:flex;align-items:center;justify-content:center}
+  .clue.txt{font-size:1.05rem;font-style:italic;color:var(--muted);padding:0 10px;min-height:4.6rem}
+  .word{font-size:2.5rem;font-weight:800;letter-spacing:.03em;margin:4px 0 14px;min-height:3.4rem;display:flex;justify-content:center;align-items:center;flex-wrap:wrap}
+  .gap{display:inline-flex;min-width:1.5em;height:1.25em;margin:0 3px;border-bottom:5px solid var(--accent);color:var(--ok);justify-content:center;align-items:center}
+  .gap.empty{min-width:1em}
+  .gap input{width:2.6em;font:inherit;font-size:1.8rem;font-weight:800;text-align:center;border:3px solid var(--accent);border-radius:12px;background:#fff;color:var(--ink);padding:2px}
+  .gap input:focus{outline:none;box-shadow:0 0 0 4px #ff6b4a33}
+  .gap.has-input{border-bottom:0}
+  .gap input.bad{border-color:var(--bad);background:#fff1f0;animation:shake .25s}
+  .options{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .opt{font:inherit;font-weight:800;font-size:1.7rem;min-width:84px;padding:10px 14px;border-radius:16px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .opt:active{transform:translateY(2px)}
+  .opt.wrong{border-color:var(--bad);background:#fff1f0}
+  .opt.right{border-color:var(--ok);background:#effaf4}
+  .feedback{min-height:3.2rem;font-size:1rem;font-weight:700;margin:12px 6px 6px}
+  .ok{color:var(--ok)} .bad-t{color:var(--bad)}
+  .end .big{font-size:2.4rem;font-weight:800;margin:6px 0}
+  .fails{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0 12px}
+  .fails span{background:#fff1f0;border:2px solid #f3b8b4;border-radius:10px;padding:4px 10px;font-weight:700}
+  .tip{background:#fff8e6;border:2px solid #f3dfa8;border-radius:14px;padding:8px 12px;font-size:.92rem;margin:8px 0;text-align:left}
+  button.main{font:inherit;font-weight:700;font-size:1.1rem;color:#fff;background:var(--accent);border:0;border-radius:14px;padding:12px 20px;cursor:pointer;box-shadow:0 4px 0 var(--accent-d);width:100%;margin-top:8px}
+  button.alt{font:inherit;font-weight:700;font-size:1rem;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:14px;padding:9px 18px;cursor:pointer;width:100%;margin-top:8px}
+  .note{font-size:.8rem;color:var(--muted);margin:-2px 0 8px}
+  .back{display:inline-block;margin-top:18px;color:var(--muted);font-size:.9rem}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  @media (prefers-reduced-motion:reduce){.gap input.bad{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>✏️ Ortografía con huecos</h1>
+
+  <div class="cats" id="cats" role="group" aria-label="Sonido"></div>
+  <div class="seg" id="mode" role="group" aria-label="Cómo contestar">
+    <button data-v="elegir" aria-pressed="true">Elegir la letra</button>
+    <button data-v="escribir" aria-pressed="false">Escribirla</button>
+  </div>
+  <div class="note" id="note" hidden>En esta categoría solo se puede elegir.</div>
+
+  <section class="stage">
+    <div id="play">
+      <div class="top"><span id="progress"></span><span id="score"></span></div>
+      <div class="clue" id="clue"></div>
+      <div class="word" id="word"></div>
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+    </div>
+    <div id="end" class="end" hidden>
+      <div style="font-weight:800;font-size:1.2rem">¡Ronda terminada!</div>
+      <div class="big" id="endbig"></div>
+      <div id="endtxt"></div>
+      <div class="fails" id="fails"></div>
+      <div class="tip" id="endtip" hidden></div>
+      <button class="alt" id="retry" hidden>Repasar solo mis fallos</button>
+      <button class="main" id="again">Otra ronda ➜</button>
+    </div>
+  </section>
+
+  <a class="back" href="../../">← Todas las aplicaciones</a>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+
+  // Cada palabra: "antes[hueco]después|pista". Un hueco vacío [] significa «sin esa letra».
+  var CATS = [
+    {id:'bv', label:'b / v', sub:'sonido /b/', opts:['b','v'],
+     rule:'No hay una regla fácil: ¡hay que memorizar cada palabra! Truco: después de m siempre va b (bombero, cambio).',
+     words:['[v]aca|🐄','[b]arco|⛵','a[b]eja|🐝','[b]allena|🐳','nie[v]e|❄️','[v]aso|🥛','[b]ota|🥾','[v]ela|🕯️','[b]icicleta|🚲','[b]olsa|👜','nu[b]e|☁️','[b]ebé|👶','[v]olcán|🌋','li[b]ro|📖','[v]iolín|🎻','[b]esar|😘','la[v]ar|🧼','[b]ufanda|🧣','ca[b]allo|🐴','to[b]ogán|Te tiras por él en el parque']},
+    {id:'gj', label:'g / j', sub:'sonido /j/', opts:['g','j'],
+     rule:'Ge y gi suenan como je y ji, y hay que memorizarlas. Pero ja, jo y ju siempre se escriben con j.',
+     words:['[g]ente|Muchas personas juntas','[g]igante|Es muy, muy grande','[j]irafa|🦒','[j]inete|Persona que monta a caballo','[j]uego|🎮','o[j]o|👁️','naran[j]a|🍊','mensa[j]e|✉️','via[j]e|🧳','[j]abón|🧼','[j]ardín|🌷','[g]irasol|🌻','má[g]ico|🪄','ti[j]era|✂️','ca[j]a|📦','mu[j]er|👩','án[g]el|👼','pá[j]aro|🐦','[j]amón|Se hace con la pata del cerdo','ima[g]en|🖼️']},
+    {id:'gu', label:'g / gu / gü', sub:'sonido /g/', opts:['g','gu','gü'],
+     rule:'Ga, go, gu y gua → g. Para sonar g con e, i se escribe gue, gui (la u no suena). Si la u sí suena: güe, güi, con diéresis.',
+     words:['[g]ato|🐱','[g]usano|🐛','[gu]itarra|🎸','[gu]isante|Verdura verde y redonda dentro de una vaina','man[gu]era|Sirve para regar el jardín','[g]uante|🧤','[g]ota|💧','ami[g]o|Alguien con quien juegas y al que quieres','hormi[g]a|🐜','pin[gü]ino|🐧','ver[gü]enza|😳','ci[gü]eña|Ave blanca de patas largas','[g]allina|🐔','[gu]ía|Persona que te enseña el camino','[g]orro|🧢','[g]lobo|🎈','re[g]alo|🎁','len[g]ua|👅','[gu]epardo|🐆','[gu]iso|🍲']},
+    {id:'ck', label:'c / qu / k', sub:'sonido /k/', opts:['c','qu','k'],
+     rule:'Ca, co, cu → c. Que, qui → qu (la u no suena). La k se usa en pocas palabras: kilo, koala, kiwi, kárate.',
+     words:['[c]asa|🏠','[qu]eso|🧀','[qu]ince|El número 15','[k]ilo|⚖️','[k]iwi|🥝','[c]oche|🚗','par[qu]e|🏞️','mos[qu]ito|🦟','[qu]ién|❓','[k]oala|🐨','pe[qu]eño|🤏','es[qu]eleto|💀','[c]ubo|🪣','[k]árate|🥋','[c]onejo|🐰','es[c]uela|🏫','[c]ama|🛏️','[c]ometa|☄️','ban[c]o|Asiento largo del parque','[qu]ieto|Sin moverse']},
+    {id:'cz', label:'c / z', sub:'sonido /z/', opts:['c','z'],
+     rule:'Za, zo, zu → z. Ce, ci → c. Y al final de palabra suele ir z (luz, paz).',
+     words:['[z]apato|👞','[z]orro|🦊','[z]umo|🧃','pla[z]a|Sitio abierto en medio de un pueblo','ta[z]a|☕','bra[z]o|💪','cabe[z]a|🙂','[c]ielo|☁️','[c]ebra|🦓','[c]ereza|🍒','[c]ena|🍽️','co[c]ina|🍳','[c]iudad|🏙️','[c]inco|El número 5','a[z]ul|🔵','[z]anahoria|🥕','lu[z]|💡','[c]ine|🎬','cora[z]ón|❤️','[c]entro|🎯']},
+    {id:'h', label:'h', sub:'¿lleva h?', opts:['h',''], labels:{'':'sin h'},
+     rule:'La h no suena. Las palabras que empiezan por hue- y hie- siempre llevan h (huevo, hielo). ¡Pero hay palabras sin h: ojo, uva, isla!',
+     words:['[h]ola|👋','[h]ueso|🦴','[h]uevo|🥚','[h]ielo|🧊','[h]ormiga|🐜','[h]elado|🍦','[h]ada|🧚','[h]umo|💨','[h]otel|🏨','[h]ermano|👦','[h]ospital|🏥','[h]oja|🍃','[h]ierba|🌱','[h]ilo|🧵','[h]elicóptero|🚁','[h]ora|🕒','[]oso|🐻','[]uva|🍇','[]isla|🏝️','[]árbol|🌳','[]oreja|👂','[]estrella|⭐','[]escuela|🏫','[]avión|✈️','[]invierno|⛄','[]unicornio|🦄']},
+    {id:'lly', label:'ll / y', sub:'ye', opts:['ll','y'],
+     rule:'Suenan casi igual, así que hay que memorizar. Truco: las palabras acabadas en -illo e -illa llevan ll (castillo, ardilla).',
+     words:['[ll]ave|🔑','[ll]uvia|🌧️','ca[ll]e|🛣️','si[ll]a|🪑','po[ll]o|🐤','ga[ll]ina|🐔','estre[ll]a|⭐','panta[ll]a|📺','cebo[ll]a|🧅','[ll]ama|🦙','casti[ll]o|🏰','ardi[ll]a|🐿️','bi[ll]ete|🎫','[y]ate|Barco de lujo','[y]ema|Parte amarilla del huevo','pa[y]aso|🤡','ra[y]o|⚡','pla[y]a|🏖️','a[y]uda|🆘','[y]ogur|🥛','jo[y]a|💎','ma[y]o|Mes entre abril y junio','a[y]er|El día antes de hoy']},
+    {id:'rr', label:'r / rr', sub:'erre', opts:['r','rr'],
+     rule:'Entre vocales, r suena suave (pera) y rr suena fuerte (perro). Al empezar una palabra suena fuerte, pero se escribe con una sola r (ratón).',
+     words:['pe[rr]o|🐕','ca[rr]o|🚗','pe[r]a|🍐','to[rr]e|🗼','tie[rr]a|🌍','[r]atón|🐭','[r]osa|🌹','[r]ío|🏞️','to[r]o|🐂','guita[rr]a|🎸','[r]eloj|⌚','ho[r]a|🕒','pi[r]ata|🏴‍☠️','mo[r]ado|🟣','ca[rr]era|🏁','ba[rr]er|🧹','co[rr]er|🏃','[r]ana|🐸','ma[r]|🌊','ce[rr]ar|🚪','ca[r]a|🙂']},
+    {id:'mn', label:'m / n', sub:'antes de p, b', opts:['m','n'],
+     rule:'Antes de p y b siempre se escribe m (campo, hombre). Antes de las demás letras, n (invierno, montaña).',
+     words:['ca[m]po|🌾','no[m]bre|Cómo te llamas','ho[m]bre|👨','bo[m]bero|🚒','lá[m]para|💡','tro[m]peta|🎺','ta[m]bor|🥁','sie[m]pre|Todos los días, sin falta','ca[m]bio|🔄','a[m]bulancia|🚑','ta[m]bién|➕','i[m]portante|❗','so[m]brero|👒','i[n]vierno|⛄','e[n]vase|🥫','e[n]viar|📤','ma[n]zana|🍎','pa[n]talón|👖','mo[n]taña|⛰️','ve[n]tana|Por ella entra la luz','i[n]vitar|💌']},
+    {id:'mix', label:'🎲 Mezcla', sub:'de todo un poco', mix:true}
+  ];
+
+  var P = {};
+  CATS.forEach(function(c){
+    if (c.mix) return;
+    c.entries = c.words.map(function(w){
+      var m = w.match(/^(.*)\[(.*)\](.*)\|(.*)$/);
+      return {pre:m[1], gap:m[2], post:m[3], clue:m[4], cat:c};
+    });
+  });
+  CATS.forEach(function(c){ if (c.mix){ c.entries = [].concat.apply([], CATS.filter(function(x){ return !x.mix; }).map(function(x){ return x.entries; })); } });
+  if (window.__test) window.__test.CATS = CATS;
+
+  var cfg = {cat:'bv', mode:'elegir'};
+  var Q = null;
+  function rd(lo,hi){ return lo + Math.floor(Math.random()*(hi-lo+1)); }
+  function shuffle(a){ for (var i=a.length-1;i>0;i--){ var j=rd(0,i), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function el(tag, cls, text){ var e=document.createElement(tag); if (cls) e.className=cls; if (text!==undefined) e.textContent=text; return e; }
+  function say(t, cls){ var f=$('feedback'); f.textContent=t; f.className='feedback'+(cls?' '+cls:''); }
+  function catById(id){ return CATS.filter(function(c){ return c.id===id; })[0]; }
+  function mode(){ return cfg.cat==='h' ? 'elegir' : cfg.mode; }
+  function full(e){ return e.pre + e.gap + e.post; }
+  function label(cat, o){ return (cat.labels && cat.labels[o]!==undefined) ? cat.labels[o] : o; }
+
+  // ---------- selector de sonido ----------
+  var cats = $('cats');
+  CATS.forEach(function(c){
+    var b = el('button','cat'); b.setAttribute('aria-pressed', c.id===cfg.cat?'true':'false'); b.setAttribute('data-v', c.id);
+    b.appendChild(document.createTextNode(c.label)); b.appendChild(el('small','',c.sub));
+    b.addEventListener('click', function(){
+      cfg.cat = c.id;
+      Array.prototype.forEach.call(cats.children, function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+      newRound();
+    });
+    cats.appendChild(b);
+  });
+  Array.prototype.forEach.call($('mode').querySelectorAll('button'), function(b){
+    b.addEventListener('click', function(){
+      cfg.mode = b.getAttribute('data-v');
+      Array.prototype.forEach.call($('mode').querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+      newRound();
+    });
+  });
+
+  // ---------- rondas de 10 palabras ----------
+  function pool(){
+    var c = catById(cfg.cat);
+    var list = c.entries;
+    if (mode()==='escribir') list = list.filter(function(e){ return e.gap!==''; });
+    return list;
+  }
+  function newRound(list){
+    $('note').hidden = !(cfg.cat==='h' && cfg.mode==='escribir');
+    $('end').hidden = true; $('play').hidden = false;
+    var words = list || shuffle(pool().slice()).slice(0,10);
+    Q = {list:words, i:0, first:0, fails:[], hadErr:false, locked:false};
+    show();
+  }
+  function show(){
+    if (Q.i >= Q.list.length) return finish();
+    var e = Q.cur = Q.list[Q.i]; Q.hadErr = false; Q.locked = false;
+    $('progress').textContent = (Q.i+1)+' / '+Q.list.length; $('score').textContent = '⭐ '+Q.first;
+    say('','');
+    var cl = $('clue'); cl.textContent = e.clue; cl.className = 'clue'+(/[A-Za-zÁ-ú]/.test(e.clue) ? ' txt' : '');
+    var w = $('word'); w.innerHTML='';
+    if (e.pre) w.appendChild(document.createTextNode(e.pre));
+    var g = el('span','gap'+(e.gap===''?' empty':'')); g.id='gap'; g.setAttribute('aria-label','hueco'); w.appendChild(g);
+    if (e.post) w.appendChild(document.createTextNode(e.post));
+    var o = $('options'); o.innerHTML='';
+    if (mode()==='elegir'){
+      e.cat.opts.forEach(function(opt){
+        var b = el('button','opt',label(e.cat,opt));
+        b.addEventListener('click', function(){
+          if (Q.locked) return;
+          if (opt===e.gap){ b.className='opt right'; good(); }
+          else { b.className='opt wrong'; b.disabled=true; wrong(); }
+        });
+        o.appendChild(b);
+      });
+    } else {
+      g.className = 'gap has-input';
+      var inp = el('input'); inp.type='text'; inp.maxLength=3; inp.autocomplete='off'; inp.autocapitalize='off'; inp.spellcheck=false; inp.setAttribute('aria-label','Letras que faltan'); inp.id='ans';
+      inp.addEventListener('input', function(){ inp.classList.remove('bad'); });
+      inp.addEventListener('keydown', function(ev){ if (ev.key==='Enter') submit(); });
+      g.appendChild(inp);
+      var ok = el('button','opt','Comprobar'); ok.style.fontSize='1.1rem'; ok.addEventListener('click', submit); o.appendChild(ok);
+      inp.focus({preventScroll:true});
+    }
+  }
+  function submit(){
+    if (!Q || Q.locked) return;
+    var inp = $('ans'); if (!inp || !inp.value.trim()) { if (inp) inp.focus(); return; }
+    if (inp.value.trim().toLowerCase() === Q.cur.gap) good();
+    else { inp.classList.add('bad'); inp.select(); wrong(); }
+  }
+  function good(){
+    var e = Q.cur; Q.locked = true;
+    if (!Q.hadErr) Q.first++; else if (Q.fails.indexOf(e)<0) Q.fails.push(e);
+    $('score').textContent = '⭐ '+Q.first;
+    var g = $('gap'); g.innerHTML=''; g.className = 'gap'+(e.gap===''?' empty':''); g.textContent = e.gap;
+    say(Q.hadErr ? '¡Correcto! Se escribe «'+full(e)+'» 🎉' : '¡Muy bien! «'+full(e)+'» 🎉', 'ok');
+    Array.prototype.forEach.call($('options').children, function(b){ b.disabled = true; });
+    setTimeout(function(){ if (Q && Q.locked){ Q.i++; show(); } }, 1300);
+  }
+  function wrong(){
+    Q.hadErr = true;
+    if (Q.fails.indexOf(Q.cur)<0) Q.fails.push(Q.cur);
+    say('Esa no es. 💡 '+Q.cur.cat.rule, 'bad-t');
+  }
+  function finish(){
+    $('play').hidden = true; $('end').hidden = false;
+    $('endbig').textContent = Q.first+' / '+Q.list.length;
+    $('endtxt').textContent = Q.first===Q.list.length ? '¡Todas a la primera! ⭐' : 'a la primera. Fíjate en estas palabras:';
+    var f = $('fails'); f.innerHTML='';
+    Q.fails.forEach(function(e){ f.appendChild(el('span','',full(e))); });
+    var cats = []; Q.fails.forEach(function(e){ if (cats.indexOf(e.cat)<0) cats.push(e.cat); });
+    var tip = $('endtip'); tip.hidden = cats.length===0; tip.innerHTML='';
+    cats.forEach(function(c){ var p = el('div','', '💡 '+c.label+': '+c.rule); p.style.marginBottom='4px'; tip.appendChild(p); });
+    var failList = Q.fails.slice(); Q.retry = failList;
+    $('retry').hidden = failList.length===0;
+    $('again').focus({preventScroll:true});
+  }
+  $('again').addEventListener('click', function(){ newRound(); });
+  $('retry').addEventListener('click', function(){ newRound(shuffle(Q.retry.slice())); });
+  newRound();
+})();
+</script>
+</body>
+</html>

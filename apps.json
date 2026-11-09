@@ -55,5 +55,48 @@
     "tags": [
       "Fracciones"
     ]
+  },
+  {
+    "folder": "reloj",
+    "title": "El reloj",
+    "emoji": "🕒",
+    "description": "Lee, escribe y pon la hora en un reloj de agujas.",
+    "topic": "Matemáticas",
+    "tags": [
+      "Reloj",
+      "Medidas"
+    ]
+  },
+  {
+    "folder": "numeros-1000",
+    "title": "Números hasta 1000",
+    "emoji": "🔢",
+    "description": "Bloques, centenas-decenas-unidades, comparar, ordenar, series y números con letras.",
+    "topic": "Matemáticas",
+    "tags": [
+      "Números",
+      "Comparar"
+    ]
+  },
+  {
+    "folder": "mapa-espana",
+    "title": "Mapa de España",
+    "emoji": "🗺️",
+    "description": "Encuentra las comunidades autónomas y aprende sus nombres y capitales.",
+    "topic": "Conocimiento del medio",
+    "tags": [
+      "Geografía",
+      "Mapas"
+    ]
+  },
+  {
+    "folder": "ortografia",
+    "title": "Ortografía con huecos",
+    "emoji": "✏️",
+    "description": "Completa palabras según el sonido: b/v, g/j, gu, c/qu, c/z, h, ll/y, r/rr y m/n.",
+    "topic": "Lengua",
+    "tags": [
+      "Ortografía"
+    ]
   }
 ]

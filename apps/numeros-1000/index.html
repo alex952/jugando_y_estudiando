@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Números hasta 1000</title>
+<style>
+  :root{--bg:#fff8ec;--ink:#2b2a33;--muted:#6b6878;--card:#fff;--line:#f0e2c8;--accent:#ff6b4a;--accent-d:#e0502f;--ok:#1f9d63;--bad:#d6453d;--c:#4f8fe8;--d:#f2a93b;--u:#e6564f}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;justify-content:center;padding:18px 12px 40px}
+  main{width:100%;max-width:500px;text-align:center}
+  h1{font-size:1.6rem;margin:4px 0 12px}
+  [hidden]{display:none !important}
+  .tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+  .tab{font:inherit;font-weight:700;font-size:.95rem;padding:10px 4px;border-radius:14px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .tab[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .seg{display:inline-flex;background:#fff;border:2px solid var(--line);border-radius:999px;padding:3px;margin-bottom:10px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:.9rem;padding:6px 14px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .stats{display:flex;gap:8px;justify-content:center;margin:0 0 12px}
+  .stat{background:#fff;border:2px solid var(--line);border-radius:14px;padding:5px 12px;min-width:96px}
+  .stat b{display:block;font-size:1.2rem}
+  .stat span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stage{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:18px 12px 16px}
+  .prompt{font-size:1.15rem;font-weight:700;margin:0 4px 12px;min-height:1.6rem}
+  .big{font-size:3rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+  .blocks{display:flex;justify-content:center;gap:14px;align-items:flex-end;margin:4px 0 14px;flex-wrap:wrap}
+  .grp{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:30px}
+  .grp .items{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:flex-end;max-width:210px}
+  .grp small{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .b100{width:38px;height:38px;border:2px solid var(--c);background:
+        linear-gradient(var(--c) 1px,transparent 1px) 0 0/3.8px 3.8px,linear-gradient(90deg,var(--c) 1px,transparent 1px) 0 0/3.8px 3.8px,#dbe8fb;border-radius:3px}
+  .b10{width:8px;height:38px;border:2px solid var(--d);background:repeating-linear-gradient(var(--d) 0 1px,#fde7c0 1px 3.8px);border-radius:2px}
+  .b1{width:9px;height:9px;background:var(--u);border-radius:2px}
+  .row{display:flex;gap:10px;justify-content:center;align-items:flex-end;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  input{width:92px;font:inherit;font-size:1.8rem;font-weight:800;text-align:center;padding:8px 4px;border:3px solid var(--line);border-radius:14px;background:#fff;color:var(--ink)}
+  input:focus{outline:none;border-color:var(--accent)}
+  .field.c input{border-color:#b9d1f6} .field.d input{border-color:#f6d9a6} .field.u input{border-color:#f3b8b4}
+  .field input:focus{border-color:var(--accent)}
+  .cmp{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:14px}
+  .cmp .mid{font-size:2.4rem;font-weight:800;min-width:46px;color:var(--muted)}
+  .signs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .opt{font:inherit;font-weight:800;font-size:1.5rem;padding:10px 6px;border-radius:16px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .opt.wrong{border-color:var(--bad);background:#fff1f0}
+  .opt.right{border-color:var(--ok);background:#effaf4}
+  .options{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .options .opt{font-size:1.15rem;font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:12px}
+  .chip{font:inherit;font-weight:800;font-size:1.7rem;padding:10px 16px;border-radius:16px;border:3px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+  .chip:disabled{border-color:var(--ok);color:var(--ok);box-shadow:none;background:#effaf4}
+  .chip.bad{animation:shake .25s;border-color:var(--bad)}
+  .slots{display:flex;gap:8px;justify-content:center;min-height:50px}
+  .slot{min-width:70px;min-height:46px;border:3px dashed var(--line);border-radius:14px;font-weight:800;font-size:1.4rem;display:flex;align-items:center;justify-content:center;color:var(--ok)}
+  .seq{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .seq .cell{min-width:64px;padding:10px 6px;border-radius:14px;border:3px solid var(--line);font-weight:800;font-size:1.5rem;background:#fffdf7}
+  .seq input{width:80px;font-size:1.5rem;padding:6px 2px}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .feedback{min-height:2.6rem;font-size:1.05rem;font-weight:700;margin:12px 6px 6px}
+  .ok{color:var(--ok)} .bad-t{color:var(--bad)}
+  button.main{font:inherit;font-weight:700;font-size:1.15rem;color:#fff;background:var(--accent);border:0;border-radius:14px;padding:13px 22px;cursor:pointer;box-shadow:0 4px 0 var(--accent-d);width:100%;margin-top:6px}
+  button.main:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-d)}
+  .back{display:inline-block;margin-top:18px;color:var(--muted);font-size:.9rem}
+  @media (prefers-reduced-motion:reduce){.chip.bad{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>🔢 Números hasta 1000</h1>
+
+  <div class="tabs" id="tabs" role="group" aria-label="Actividad">
+    <button class="tab" data-v="bloques" aria-pressed="true">🧱 Cuenta los bloques</button>
+    <button class="tab" data-v="descomponer" aria-pressed="false">🧩 C · D · U</button>
+    <button class="tab" data-v="comparar" aria-pressed="false">⚖️ Compara</button>
+    <button class="tab" data-v="ordenar" aria-pressed="false">📶 Ordena</button>
+    <button class="tab" data-v="serie" aria-pressed="false">➕ Completa la serie</button>
+    <button class="tab" data-v="letras" aria-pressed="false">📖 Con letras</button>
+  </div>
+  <div class="seg" id="range" role="group" aria-label="Hasta">
+    <button data-v="100" aria-pressed="false">Hasta 100</button>
+    <button data-v="500" aria-pressed="false">Hasta 500</button>
+    <button data-v="1000" aria-pressed="true">Hasta 1000</button>
+  </div>
+
+  <div class="stats" aria-live="polite">
+    <div class="stat"><b id="aciertos">0</b><span>Aciertos</span></div>
+    <div class="stat"><b id="racha">0</b><span>Racha</span></div>
+  </div>
+
+  <section class="stage">
+    <div class="prompt" id="prompt"></div>
+    <div id="area"></div>
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <button class="main" id="primary" hidden>Comprobar</button>
+  </section>
+
+  <a class="back" href="../../">← Todas las aplicaciones</a>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var cfg = {mode:'bloques', max:1000};
+  var X = null, aciertos = 0, racha = 0, lastN = null;
+
+  function rd(lo,hi){ return lo + Math.floor(Math.random()*(hi-lo+1)); }
+  function pick(a){ return a[rd(0,a.length-1)]; }
+  function shuffle(a){ for (var i=a.length-1;i>0;i--){ var j=rd(0,i), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function el(tag, cls, text){ var e=document.createElement(tag); if (cls) e.className=cls; if (text!==undefined) e.textContent=text; return e; }
+  function say(t, cls){ var f=$('feedback'); f.textContent=t; f.className='feedback'+(cls?' '+cls:''); }
+  function fmt(n){ return String(n); }
+
+  // ---------- números con letras ----------
+  var UN = ['cero','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve','veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco','veintiséis','veintisiete','veintiocho','veintinueve'];
+  var DE = ['','','','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];
+  var CE = ['','ciento','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos'];
+  function words(n){
+    if (n===1000) return 'mil';
+    if (n===100) return 'cien';
+    var c = Math.floor(n/100), r = n%100, out = [];
+    if (c) out.push(CE[c]);
+    if (r || !c){
+      if (r<30) out.push(UN[r]);
+      else out.push(DE[Math.floor(r/10)] + (r%10 ? ' y '+UN[r%10] : ''));
+    }
+    return out.join(' ');
+  }
+  if (window.__test) window.__test.words = words;
+
+  // ---------- generación de números ----------
+  function lo(){ return cfg.max===100 ? 10 : 100; }
+  function hi(){ return cfg.max===1000 ? 999 : cfg.max===500 ? 500 : 99; }   // para bloques y C·D·U
+  function randN(top){ var n, g=0; do { n = rd(lo(), top); g++; } while (n===lastN && g<20); lastN = n; return n; }
+
+  // ---------- 1. bloques ----------
+  function genBloques(){ var n = randN(hi()); return {n:n, solved:false, had:false}; }
+  function renderBloques(){
+    $('prompt').textContent = '¿Qué número forman estos bloques?';
+    var a = $('area'); a.innerHTML='';
+    var bl = el('div','blocks'), n = X.n, parts = [[Math.floor(n/100),'b100','centenas'],[Math.floor(n/10)%10,'b10','decenas'],[n%10,'b1','unidades']];
+    parts.forEach(function(p){
+      if (p[0]===0 && p[2]==='centenas' && cfg.max===100) return;
+      var g = el('div','grp'), it = el('div','items');
+      for (var i=0;i<p[0];i++) it.appendChild(el('div',p[1]));
+      if (p[0]===0) it.appendChild(el('span','', '—'));
+      g.appendChild(it); g.appendChild(el('small','',p[2])); bl.appendChild(g);
+    });
+    a.appendChild(bl);
+    a.appendChild(numInput('ans', 'Tu respuesta', 3));
+    $('primary').hidden=false; $('primary').textContent='Comprobar';
+    $('ans').focus({preventScroll:true});
+  }
+  function numInput(id, label, len){
+    var w = el('div','row'), i = el('input'); i.id=id; i.type='text'; i.inputMode='numeric'; i.maxLength=len||4; i.autocomplete='off'; i.setAttribute('aria-label',label);
+    i.addEventListener('input', function(){ i.value = i.value.replace(/[^0-9]/g,''); });
+    i.addEventListener('keydown', function(e){ if (e.key==='Enter') primary(); });
+    w.appendChild(i); return w;
+  }
+  function checkBloques(){
+    var v = parseInt($('ans').value,10); if (isNaN(v)){ $('ans').focus(); return; }
+    if (v===X.n) return solve(fmt(X.n));
+    fail('Cuenta primero las placas grandes (centenas), luego las barras (decenas) y al final los cubitos 🤔'); $('ans').select();
+  }
+
+  // ---------- 2. centenas, decenas y unidades ----------
+  function genDesc(){ var n = randN(hi()); return {n:n, rev:Math.random()<0.5, solved:false, had:false}; }
+  function field(id, cls, label){
+    var f = el('div','field '+cls), i = el('input'); i.id=id; i.type='text'; i.inputMode='numeric'; i.maxLength=2; i.autocomplete='off'; i.setAttribute('aria-label',label);
+    i.addEventListener('input', function(){ i.value = i.value.replace(/[^0-9]/g,''); });
+    i.addEventListener('keydown', function(e){ if (e.key==='Enter') primary(); });
+    f.appendChild(i); f.appendChild(el('span','',label)); return f;
+  }
+  function renderDesc(){
+    var a = $('area'); a.innerHTML=''; var n = X.n, c = Math.floor(n/100), d = Math.floor(n/10)%10, u = n%10, two = cfg.max===100;
+    if (!X.rev){
+      $('prompt').textContent = 'Escribe cuántas centenas, decenas y unidades tiene:';
+      a.appendChild(el('div','big',fmt(n))); a.lastChild.style.marginBottom='12px';
+      var row = el('div','row');
+      if (!two) row.appendChild(field('cc','c','centenas'));
+      row.appendChild(field('dd','d','decenas')); row.appendChild(field('uu','u','unidades'));
+      a.appendChild(row);
+    } else {
+      $('prompt').textContent = '¿Qué número es?';
+      a.appendChild(el('div','big', (two ? '' : c+' C + ')+d+' D + '+u+' U')); a.lastChild.style.fontSize='2rem'; a.lastChild.style.marginBottom='12px';
+      a.appendChild(numInput('ans','Tu respuesta',3));
+    }
+    $('primary').hidden=false; $('primary').textContent='Comprobar';
+    var f = $('cc') || $('dd') || $('ans'); f.focus({preventScroll:true});
+  }
+  function checkDesc(){
+    var n = X.n, c = Math.floor(n/100), d = Math.floor(n/10)%10, u = n%10;
+    if (X.rev){
+      var v = parseInt($('ans').value,10); if (isNaN(v)){ $('ans').focus(); return; }
+      if (v===n) return solve(fmt(n));
+      return fail('Junta las centenas, las decenas y las unidades: ¿qué cifra va en cada sitio? 🤔');
+    }
+    var cv = $('cc') ? parseInt($('cc').value,10) : 0, dv = parseInt($('dd').value,10), uv = parseInt($('uu').value,10);
+    if (isNaN(cv)||isNaN(dv)||isNaN(uv)){ [$('cc'),$('dd'),$('uu')].filter(Boolean).find(function(i){ return i.value===''; }).focus(); return; }
+    if (cv===c && dv===d && uv===u) return solve(fmt(n));
+    fail('Mira cada cifra: la primera son centenas, la del medio decenas y la última unidades 🤔');
+  }
+
+  // ---------- 3. comparar ----------
+  function genComparar(){
+    var top = cfg.max, a, b, t = Math.random();
+    var L = cfg.max===100 ? 10 : 100;
+    a = rd(L, top);
+    if (t<0.08) b = a;
+    else if (t<0.45 && cfg.max>100){ b = Math.floor(a/100)*100 + rd(0,99); if (b>top || b===a) b = (a<top ? a+1 : a-1); }    // mismas centenas
+    else if (t<0.7){ var s = String(a); b = parseInt(s.split('').reverse().join(''),10); if (b<L||b>top||b===a) b = rd(L,top); }  // cifras al revés
+    else b = rd(L, top);
+    if (Math.random()<0.5){ var x=a; a=b; b=x; }
+    return {a:a, b:b, ans: a<b ? '<' : a>b ? '>' : '=', solved:false, had:false};
+  }
+  function renderComparar(){
+    $('prompt').textContent = 'Compara los números';
+    var a = $('area'); a.innerHTML='';
+    var row = el('div','cmp'), mid = el('div','mid','?');
+    row.appendChild(el('div','big',fmt(X.a))); row.appendChild(mid); row.appendChild(el('div','big',fmt(X.b)));
+    a.appendChild(row);
+    var s = el('div','signs');
+    ['<','=','>'].forEach(function(sg){
+      var b = el('button','opt',sg); b.setAttribute('aria-label', sg==='<'?'menor que':sg==='>'?'mayor que':'igual a');
+      b.addEventListener('click', function(){
+        if (X.solved) return;
+        if (sg===X.ans){ b.className='opt right'; mid.textContent=sg; solve(X.a+' '+sg+' '+X.b); }
+        else { b.className='opt wrong'; b.disabled=true; fail('Compara primero las centenas, luego las decenas 🤔'); }
+      });
+      s.appendChild(b);
+    });
+    a.appendChild(s); $('primary').hidden=true;
+  }
+
+  // ---------- 4. ordenar ----------
+  function genOrdenar(){
+    var set = {}, arr = [], L = cfg.max===100 ? 10 : 100, base = Math.random()<0.4 && cfg.max>100 ? rd(1,Math.floor(cfg.max/100)-1)*100 : null;
+    var g = 0;
+    while (arr.length<4 && g++<200){
+      var n = base!==null ? Math.min(cfg.max, base + rd(0,99)) : rd(L, cfg.max);
+      if (!set[n]){ set[n]=1; arr.push(n); }
+    }
+    return {arr:arr, asc:Math.random()<0.6, next:0, solved:false, had:false};
+  }
+  function renderOrdenar(){
+    $('prompt').textContent = 'Toca los números '+(X.asc ? 'de menor a mayor' : 'de mayor a menor');
+    var sorted = X.arr.slice().sort(function(p,q){ return X.asc ? p-q : q-p; }); X.sorted = sorted;
+    var a = $('area'); a.innerHTML='';
+    var chips = el('div','chips');
+    X.arr.forEach(function(n){
+      var b = el('button','chip',fmt(n));
+      b.addEventListener('click', function(){
+        if (X.solved) return;
+        if (n===X.sorted[X.next]){
+          b.disabled = true; slots.children[X.next].textContent = fmt(n); X.next++;
+          if (X.next===X.sorted.length) solve(X.sorted.join(X.asc ? ' < ' : ' > '));
+        } else {
+          b.classList.add('bad'); setTimeout(function(){ b.classList.remove('bad'); }, 300);
+          fail(X.asc ? 'Ese no es el más pequeño que queda. ¡Mira las centenas primero! 🤔' : 'Ese no es el más grande que queda. ¡Mira las centenas primero! 🤔');
+        }
+      });
+      chips.appendChild(b);
+    });
+    a.appendChild(chips);
+    var slots = el('div','slots'); for (var i=0;i<4;i++) slots.appendChild(el('div','slot')); a.appendChild(slots);
+    $('primary').hidden=true;
+  }
+
+  // ---------- 5. series ----------
+  function genSerie(){
+    var steps = cfg.max===100 ? [1,2,5,10] : cfg.max===500 ? [1,5,10,50,100] : [1,10,50,100,5,2], step, asc = Math.random()<0.75, start, g = 0;
+    step = pick(steps);
+    var span = step*4, lowest = cfg.max===100 ? 0 : 0;
+    var minStart = lowest, maxStart = cfg.max - span;
+    if (maxStart < minStart){ step = 1; span = 4; maxStart = cfg.max-4; }
+    var s0 = rd(minStart, maxStart);
+    var seq = []; for (var i=0;i<5;i++) seq.push(asc ? s0 + i*step : s0 + (4-i)*step);
+    return {seq:seq, step:step, hole:rd(0,4), solved:false, had:false};
+  }
+  function renderSerie(){
+    $('prompt').textContent = 'Completa la serie';
+    var a = $('area'); a.innerHTML='';
+    var row = el('div','seq');
+    X.seq.forEach(function(n,i){
+      if (i===X.hole){ var inp = el('input'); inp.id='ans'; inp.type='text'; inp.inputMode='numeric'; inp.maxLength=4; inp.autocomplete='off'; inp.setAttribute('aria-label','Número que falta');
+        inp.addEventListener('input', function(){ inp.value = inp.value.replace(/[^0-9]/g,''); });
+        inp.addEventListener('keydown', function(e){ if (e.key==='Enter') primary(); });
+        row.appendChild(inp); }
+      else row.appendChild(el('div','cell',fmt(n)));
+    });
+    a.appendChild(row);
+    $('primary').hidden=false; $('primary').textContent='Comprobar';
+    $('ans').focus({preventScroll:true});
+  }
+  function checkSerie(){
+    var v = parseInt($('ans').value,10); if (isNaN(v)){ $('ans').focus(); return; }
+    if (v===X.seq[X.hole]) return solve(X.seq.join(', '));
+    fail('Fíjate en cuánto cambia de un número al siguiente 🤔'); $('ans').select();
+  }
+
+  // ---------- 6. con letras ----------
+  function genLetras(){
+    var n, g = 0, L = cfg.max===100 ? 10 : 100;
+    do { n = rd(L, cfg.max); g++; } while (n===lastN && g<20); lastN = n;
+    return {n:n, toWords:Math.random()<0.5, solved:false, had:false};
+  }
+  function near(n){
+    if (n===1000) return shuffle([100,900,990,999].filter(function(x){ return x<=cfg.max; })).slice(0,3);
+    var s = String(n).padStart(3,'0'), c = +s[0], d = +s[1], u = +s[2], out = [];
+    var top = cfg.max, L = cfg.max===100 ? 10 : 100;
+    [[c,u,d],[d,c,u],[c,(d+1)%10,u],[c,d,(u+1)%10],[(c+1)%10,d,u],[c,(d+9)%10,u],[u,d,c]].forEach(function(t){ out.push(t[0]*100+t[1]*10+t[2]); });
+    out = out.filter(function(x,i){ return x!==n && x>=L && x<=top && out.indexOf(x)===i; });
+    var g = 0; while (out.length<3 && g++<100){ var r = rd(L, top); if (r!==n && out.indexOf(r)<0) out.push(r); }
+    return shuffle(out).slice(0,3);
+  }
+  function renderLetras(){
+    var a = $('area'); a.innerHTML='';
+    var opts = shuffle(near(X.n).concat([X.n]));
+    if (X.toWords){
+      $('prompt').textContent = '¿Cómo se lee este número?';
+      a.appendChild(el('div','big',fmt(X.n))); a.lastChild.style.marginBottom='12px';
+    } else {
+      $('prompt').textContent = '¿Qué número es?';
+      a.appendChild(el('div','big',words(X.n))); a.lastChild.style.fontSize='1.7rem'; a.lastChild.style.marginBottom='12px';
+    }
+    var box = el('div','options');
+    opts.forEach(function(n){
+      var b = el('button','opt', X.toWords ? words(n) : fmt(n));
+      b.addEventListener('click', function(){
+        if (X.solved) return;
+        if (n===X.n){ b.className='opt right'; solve(fmt(X.n)+' = '+words(X.n)); }
+        else { b.className='opt wrong'; b.disabled=true; fail('Casi. Fíjate en las centenas, las decenas y las unidades 🤔'); }
+      });
+      box.appendChild(b);
+    });
+    a.appendChild(box); $('primary').hidden=true;
+  }
+
+  // ---------- flujo común ----------
+  function updateStats(){ $('aciertos').textContent = aciertos; $('racha').textContent = racha; }
+  function solve(txt){
+    X.solved = true;
+    if (!X.had){ aciertos++; racha++; }
+    updateStats();
+    say((X.had ? '¡Correcto! ' : '¡Muy bien! ')+(txt||'')+' 🎉', 'ok');
+    var pb = $('primary'); pb.hidden = false; pb.textContent = 'Siguiente ➜'; pb.setAttribute('data-next','1'); pb.focus({preventScroll:true});
+  }
+  function fail(msg){ X.had = true; racha = 0; updateStats(); say(msg,'bad-t'); }
+  function primary(){
+    if (!X) return;
+    if ($('primary').getAttribute('data-next')) return next();
+    if (cfg.mode==='bloques') checkBloques();
+    else if (cfg.mode==='descomponer') checkDesc();
+    else if (cfg.mode==='serie') checkSerie();
+  }
+  function next(){
+    $('primary').removeAttribute('data-next'); say('','');
+    var m = cfg.mode;
+    if (m==='bloques'){ X = genBloques(); renderBloques(); }
+    else if (m==='descomponer'){ X = genDesc(); renderDesc(); }
+    else if (m==='comparar'){ X = genComparar(); renderComparar(); }
+    else if (m==='ordenar'){ X = genOrdenar(); renderOrdenar(); }
+    else if (m==='serie'){ X = genSerie(); renderSerie(); }
+    else { X = genLetras(); renderLetras(); }
+  }
+
+  function group(id, key){
+    var g = $(id);
+    Array.prototype.forEach.call(g.querySelectorAll('button'), function(b){
+      b.addEventListener('click', function(){
+        var v = b.getAttribute('data-v');
+        cfg[key] = key==='max' ? parseInt(v,10) : v;
+        Array.prototype.forEach.call(g.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+        lastN = null; next();
+      });
+    });
+  }
+  group('tabs','mode'); group('range','max');
+  $('primary').addEventListener('click', primary);
+  next();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El reloj</title>
+<style>
+  :root{--bg:#fff8ec;--ink:#2b2a33;--muted:#6b6878;--card:#fff;--line:#f0e2c8;--accent:#ff6b4a;--accent-d:#e0502f;--ok:#1f9d63;--bad:#d6453d}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;justify-content:center;padding:18px 12px 40px}
+  main{width:100%;max-width:460px;text-align:center}
+  h1{font-size:1.6rem;margin:4px 0 12px}
+  [hidden]{display:none !important}
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .tab{font:inherit;font-weight:700;font-size:.95rem;padding:10px 4px;border-radius:14px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .tab[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .seg{display:inline-flex;flex-wrap:wrap;justify-content:center;background:#fff;border:2px solid var(--line);border-radius:20px;padding:3px;margin-bottom:10px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:.88rem;padding:6px 11px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .stats{display:flex;gap:8px;justify-content:center;margin:0 0 12px}
+  .stat{background:#fff;border:2px solid var(--line);border-radius:14px;padding:5px 12px;min-width:96px}
+  .stat b{display:block;font-size:1.2rem}
+  .stat span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stage{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:16px 12px 16px}
+  .prompt{font-size:1.2rem;font-weight:700;margin:0 4px 8px;min-height:2.8rem}
+  .prompt small{display:block;font-size:.95rem;color:var(--muted);font-weight:400}
+  svg.clock{width:100%;max-width:290px;height:auto;display:block;margin:0 auto 12px;touch-action:none;user-select:none;-webkit-user-select:none}
+  .options{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .opt{font:inherit;padding:10px 4px;border-radius:16px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .opt b{display:block;font-size:1.6rem}
+  .opt span{display:block;font-size:.78rem;color:var(--muted)}
+  .opt.wrong{border-color:var(--bad);background:#fff1f0}
+  .opt.right{border-color:var(--ok);background:#effaf4}
+  .write{display:flex;gap:6px;justify-content:center;align-items:center;font-size:2.2rem;font-weight:800}
+  .write input{width:84px;font:inherit;font-size:2rem;font-weight:800;text-align:center;padding:6px;border:3px solid var(--line);border-radius:14px;background:#fff;color:var(--ink)}
+  .write input:focus{outline:none;border-color:var(--accent)}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px}
+  .steps button{font:inherit;font-weight:700;font-size:.92rem;padding:9px 2px;border-radius:12px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .mine{margin:6px 0 8px;color:var(--muted);font-size:.95rem}
+  .mine b{color:var(--ink);font-size:1.3rem}
+  .feedback{min-height:2.6rem;font-size:1.05rem;font-weight:700;margin:12px 6px 6px}
+  .ok{color:var(--ok)} .bad{color:var(--bad)}
+  button.main{font:inherit;font-weight:700;font-size:1.15rem;color:#fff;background:var(--accent);border:0;border-radius:14px;padding:13px 22px;cursor:pointer;box-shadow:0 4px 0 var(--accent-d);width:100%;margin-top:6px}
+  button.main:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-d)}
+  .back{display:inline-block;margin-top:18px;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+  <h1>🕒 El reloj</h1>
+
+  <div class="tabs" id="tabs" role="group" aria-label="Actividad">
+    <button class="tab" data-v="leer" aria-pressed="true">👀 Leer la hora</button>
+    <button class="tab" data-v="escribir" aria-pressed="false">⌨️ Escribirla</button>
+    <button class="tab" data-v="poner" aria-pressed="false">✋ Poner la hora</button>
+  </div>
+  <div class="seg" id="levels" role="group" aria-label="Nivel">
+    <button data-v="0" aria-pressed="true">En punto y media</button>
+    <button data-v="1" aria-pressed="false">Cuartos</button>
+    <button data-v="2" aria-pressed="false">De 5 en 5</button>
+    <button data-v="3" aria-pressed="false">Cualquier minuto</button>
+  </div>
+
+  <div class="stats" aria-live="polite">
+    <div class="stat"><b id="aciertos">0</b><span>Aciertos</span></div>
+    <div class="stat"><b id="racha">0</b><span>Racha</span></div>
+  </div>
+
+  <section class="stage">
+    <div class="prompt" id="prompt"></div>
+    <svg class="clock" id="clock" viewBox="0 0 300 300" role="img" aria-label="Reloj analógico"></svg>
+    <div id="area"></div>
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <button class="main" id="primary" hidden>Comprobar</button>
+  </section>
+
+  <a class="back" href="../../">← Todas las aplicaciones</a>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var cfg = {mode:'leer', level:0};
+  var X = null, T = {h:12, m:0}, aciertos = 0, racha = 0, last = null;
+  var svg = $('clock'), hourG, minG, dragging = null;
+
+  var HN = ['las doce','la una','las dos','las tres','las cuatro','las cinco','las seis','las siete','las ocho','las nueve','las diez','las once'];
+  var NUM = ['cero','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve','veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco','veintiséis','veintisiete','veintiocho','veintinueve'];
+
+  function rd(lo,hi){ return lo + Math.floor(Math.random()*(hi-lo+1)); }
+  function pick(a){ return a[rd(0,a.length-1)]; }
+  function shuffle(a){ for (var i=a.length-1;i>0;i--){ var j=rd(0,i), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function el(tag, cls, text){ var e=document.createElement(tag); if (cls) e.className=cls; if (text!==undefined) e.textContent=text; return e; }
+  function sv(tag, attrs){ var e=document.createElementNS(SVGNS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function say(t, cls){ var f=$('feedback'); f.textContent=t; f.className='feedback'+(cls?' '+cls:''); }
+
+  function digital(h,m){ return (h%12===0 ? 12 : h%12)+':'+pad(m); }
+  function words(h,m){
+    var H = HN[h%12], N = HN[(h+1)%12], t;
+    if (m===0) t = H+' en punto';
+    else if (m===15) t = H+' y cuarto';
+    else if (m===30) t = H+' y media';
+    else if (m===45) t = N+' menos cuarto';
+    else if (m<30) t = H+' y '+NUM[m];
+    else t = N+' menos '+NUM[60-m];
+    var first = (m>30 ? (h+1)%12 : h%12) === 1;
+    return (first ? 'Es ' : 'Son ')+t;
+  }
+
+  // ---------- reloj ----------
+  function buildClock(){
+    svg.innerHTML = '';
+    svg.appendChild(sv('circle', {cx:150, cy:150, r:142, fill:'#fff', stroke:'#2b2a33', 'stroke-width':6}));
+    for (var i=0;i<60;i++){
+      var a = i*6*Math.PI/180, big = i%5===0, r1 = 134, r2 = big ? 118 : 126;
+      svg.appendChild(sv('line', {x1:150+r1*Math.sin(a), y1:150-r1*Math.cos(a), x2:150+r2*Math.sin(a), y2:150-r2*Math.cos(a), stroke:'#2b2a33', 'stroke-width': big?3.5:1.5, 'stroke-linecap':'round'}));
+    }
+    for (var n=1;n<=12;n++){
+      var b = n*30*Math.PI/180, t = sv('text', {x:150+98*Math.sin(b), y:150-98*Math.cos(b)+9, 'text-anchor':'middle', 'font-size':26, 'font-weight':800, fill:'#2b2a33', 'font-family':'Trebuchet MS, Segoe UI, sans-serif'});
+      t.textContent = n; svg.appendChild(t);
+    }
+    hourG = sv('g', {}); minG = sv('g', {});
+    hourG.appendChild(sv('line', {x1:150, y1:150, x2:150, y2:88, stroke:'#2b2a33', 'stroke-width':11, 'stroke-linecap':'round'}));
+    minG.appendChild(sv('line', {x1:150, y1:150, x2:150, y2:44, stroke:'#ff6b4a', 'stroke-width':7, 'stroke-linecap':'round'}));
+    // zonas táctiles (solo se usan al poner la hora)
+    hourG.appendChild(sv('line', {x1:150, y1:150, x2:150, y2:86, stroke:'#000', 'stroke-opacity':0, 'stroke-width':40, 'stroke-linecap':'round', 'pointer-events':'stroke', 'data-hand':'h'}));
+    minG.appendChild(sv('line', {x1:150, y1:150, x2:150, y2:44, stroke:'#000', 'stroke-opacity':0, 'stroke-width':34, 'stroke-linecap':'round', 'pointer-events':'stroke', 'data-hand':'m'}));
+    svg.appendChild(hourG); svg.appendChild(minG);
+    svg.appendChild(sv('circle', {cx:150, cy:150, r:9, fill:'#2b2a33', 'pointer-events':'none'}));
+  }
+  function setClock(h,m){
+    hourG.setAttribute('transform', 'rotate('+((h%12)*30 + m*0.5)+' 150 150)');
+    minG.setAttribute('transform', 'rotate('+(m*6)+' 150 150)');
+    svg.setAttribute('aria-label', 'Reloj analógico');
+  }
+
+  // arrastrar manecillas
+  function angleOf(e){
+    var r = svg.getBoundingClientRect();
+    var x = (e.clientX - r.left)/r.width*300 - 150, y = (e.clientY - r.top)/r.height*300 - 150;
+    return (Math.atan2(x, -y)*180/Math.PI + 360) % 360;
+  }
+  function stepMin(){ return cfg.level===3 ? 1 : 5; }
+  function setMinute(m){
+    m = ((m%60)+60)%60;
+    var prev = T.m;
+    if (prev>=45 && m<=15 && Math.abs(m-prev)>30) T.h = T.h%12 + 1;
+    else if (prev<=15 && m>=45 && Math.abs(m-prev)>30) T.h = (T.h+10)%12 + 1;
+    T.m = m; refreshPoner();
+  }
+  function setHour(h){ T.h = ((h%12)+12)%12 || 12; refreshPoner(); }
+  svg.addEventListener('pointerdown', function(e){
+    if (cfg.mode!=='poner' || !X || X.solved) return;
+    var h = e.target && e.target.getAttribute && e.target.getAttribute('data-hand');
+    if (!h) return;
+    dragging = h; try { svg.setPointerCapture(e.pointerId); } catch(err){}
+    e.preventDefault();
+  });
+  svg.addEventListener('pointermove', function(e){
+    if (!dragging) return;
+    var a = angleOf(e);
+    if (dragging==='m'){ var s = stepMin(); setMinute(Math.round(a/6/s)*s); }
+    else setHour(Math.round((a - T.m*0.5)/30));
+  });
+  function stop(){ dragging = null; }
+  svg.addEventListener('pointerup', stop); svg.addEventListener('pointercancel', stop);
+
+  // ---------- ejercicios ----------
+  function minutesFor(){
+    if (cfg.level===0) return [0,30];
+    if (cfg.level===1) return [0,15,30,45];
+    if (cfg.level===2) { var r=[]; for (var i=0;i<60;i+=5) r.push(i); return r; }
+    var all=[]; for (var j=0;j<60;j++) all.push(j); return all;
+  }
+  function gen(){
+    var h, m, tries = 0;
+    do { h = rd(1,12); m = pick(minutesFor()); tries++; } while (last && last.h===h && last.m===m && tries<20);
+    last = {h:h, m:m};
+    return {h:h, m:m, solved:false, had:false};
+  }
+  function key(t){ return t.h+':'+t.m; }
+  function distractors(h,m){
+    var c = [], s = cfg.level===3 ? 1 : 5;
+    if (m%5===0){ c.push({h:(m/5)||12, m:(h%12)*5}); }      // confundir las manecillas
+    c.push({h:h%12+1, m:m}); c.push({h:(h+10)%12+1, m:m});
+    c.push({h:h, m:(m+s*(cfg.level===0?6:1))%60}); c.push({h:h, m:(m+60-s*(cfg.level===0?6:1))%60});
+    if (m!==0 && m!==30) c.push({h:h, m:(60-m)%60});
+    var out = [], seen = {}; seen[key({h:h%12||12,m:m})] = 1;
+    shuffle(c).forEach(function(t){ t.h = t.h%12||12; if (!seen[key(t)] && out.length<3){ seen[key(t)]=1; out.push(t); } });
+    var g = 0;
+    while (out.length<3 && g++<100){ var t = {h:rd(1,12), m:pick(minutesFor())}; if (!seen[key(t)]){ seen[key(t)]=1; out.push(t); } }
+    return out;
+  }
+
+  function renderLeer(){
+    $('prompt').textContent = '¿Qué hora marca el reloj?';
+    setClock(X.h, X.m);
+    var a = $('area'); a.innerHTML='';
+    var box = el('div','options');
+    var opts = shuffle(distractors(X.h,X.m).concat([{h:X.h%12||12, m:X.m}]));
+    opts.forEach(function(t){
+      var b = el('button','opt'); b.appendChild(el('b','',digital(t.h,t.m))); b.appendChild(el('span','',words(t.h,t.m)));
+      b.addEventListener('click', function(){
+        if (X.solved) return;
+        if (t.h===(X.h%12||12) && t.m===X.m){ b.className='opt right'; solve(); }
+        else { b.className='opt wrong'; b.disabled=true; fail('Esa no es. Mira primero la manecilla corta (horas) y luego la larga (minutos) 🤔'); }
+      });
+      box.appendChild(b);
+    });
+    a.appendChild(box);
+    $('primary').hidden = true;
+  }
+
+  function renderEscribir(){
+    $('prompt').textContent = 'Escribe la hora que marca el reloj';
+    setClock(X.h, X.m);
+    var a = $('area'); a.innerHTML='';
+    var w = el('div','write');
+    var hh = el('input'); hh.id='hh'; hh.type='text'; hh.inputMode='numeric'; hh.maxLength=2; hh.autocomplete='off'; hh.setAttribute('aria-label','Horas'); hh.placeholder='h';
+    var mm = el('input'); mm.id='mm'; mm.type='text'; mm.inputMode='numeric'; mm.maxLength=2; mm.autocomplete='off'; mm.setAttribute('aria-label','Minutos'); mm.placeholder='min';
+    [hh,mm].forEach(function(i){
+      i.addEventListener('input', function(){ i.value = i.value.replace(/[^0-9]/g,''); });
+      i.addEventListener('keydown', function(e){ if (e.key==='Enter') primary(); });
+    });
+    hh.addEventListener('input', function(){ if (hh.value.length===2 || (hh.value.length===1 && +hh.value>1)) mm.focus(); });
+    w.appendChild(hh); w.appendChild(document.createTextNode(':')); w.appendChild(mm);
+    a.appendChild(w);
+    $('primary').hidden = false; $('primary').textContent = 'Comprobar';
+    hh.focus({preventScroll:true});
+  }
+  function checkEscribir(){
+    var hv = parseInt($('hh').value,10), mv = parseInt($('mm').value,10);
+    if (isNaN(hv) || isNaN(mv)) { (isNaN(hv)?$('hh'):$('mm')).focus(); return; }
+    if ((hv%12||12) === (X.h%12||12) && mv === X.m) return solve();
+    if ((hv%12||12) !== (X.h%12||12)) fail('Mira la manecilla corta: ¿entre qué dos números está? 🤔');
+    else fail('Las horas están bien. Revisa la manecilla larga (los minutos) 🤔');
+  }
+
+  function renderPoner(){
+    var p = $('prompt'); p.textContent = 'Pon el reloj a las '+digital(X.h,X.m);
+    var s = el('small','',words(X.h,X.m)); p.appendChild(s);
+    T = {h:12, m:0};
+    var a = $('area'); a.innerHTML='';
+    var mine = el('div','mine'); mine.appendChild(document.createTextNode('Tu reloj marca: ')); var bb = el('b','',''); bb.id='mine'; mine.appendChild(bb);
+    a.appendChild(mine);
+    var st = el('div','steps');
+    [['Hora −',function(){ setHour(T.h-1); }],['Hora +',function(){ setHour(T.h+1); }],['Min −',function(){ setMinute(T.m-stepMin()); }],['Min +',function(){ setMinute(T.m+stepMin()); }]].forEach(function(x){
+      var b = el('button','',x[0]); b.type='button'; b.addEventListener('click', function(){ if (!X.solved) x[1](); }); st.appendChild(b);
+    });
+    a.appendChild(st);
+    $('primary').hidden = false; $('primary').textContent = 'Comprobar';
+    refreshPoner();
+  }
+  function refreshPoner(){
+    if (cfg.mode!=='poner') return;
+    setClock(T.h, T.m);
+    var b = $('mine'); if (b) b.textContent = digital(T.h,T.m);
+  }
+  function checkPoner(){
+    if ((T.h%12) === (X.h%12) && T.m === X.m) return solve();
+    if (T.m !== X.m && (T.h%12) !== (X.h%12)) fail('Todavía no. Revisa las dos manecillas 🤔');
+    else if (T.m !== X.m) fail('Las horas están bien. Revisa la manecilla larga (los minutos) 🤔');
+    else fail('Los minutos están bien. Revisa la manecilla corta (las horas) 🤔');
+  }
+
+  // ---------- flujo común ----------
+  function updateStats(){ $('aciertos').textContent = aciertos; $('racha').textContent = racha; }
+  function solve(){
+    X.solved = true;
+    if (!X.had){ aciertos++; racha++; }
+    updateStats();
+    say((X.had ? '¡Correcto! ' : '¡Muy bien! ')+words(X.h,X.m)+' 🎉', 'ok');
+    if (cfg.mode==='poner') setClock(X.h, X.m);
+    var pb = $('primary'); pb.hidden = false; pb.textContent = 'Siguiente ➜'; pb.setAttribute('data-next','1'); pb.focus({preventScroll:true});
+  }
+  function fail(msg){ X.had = true; racha = 0; updateStats(); say(msg,'bad'); }
+  function primary(){
+    if (!X) return;
+    if ($('primary').getAttribute('data-next')) return next();
+    if (cfg.mode==='escribir') checkEscribir();
+    else if (cfg.mode==='poner') checkPoner();
+  }
+  function next(){
+    $('primary').removeAttribute('data-next'); say('','');
+    X = gen();
+    if (cfg.mode==='leer') renderLeer();
+    else if (cfg.mode==='escribir') renderEscribir();
+    else renderPoner();
+  }
+
+  function group(id, key){
+    var g = $(id);
+    Array.prototype.forEach.call(g.querySelectorAll('button'), function(b){
+      b.addEventListener('click', function(){
+        var v = b.getAttribute('data-v');
+        cfg[key] = key==='level' ? parseInt(v,10) : v;
+        Array.prototype.forEach.call(g.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+        next();
+      });
+    });
+  }
+  group('tabs','mode'); group('levels','level');
+  $('primary').addEventListener('click', primary);
+  buildClock();
+  next();
+})();
+</script>
+</body>
+</html>
