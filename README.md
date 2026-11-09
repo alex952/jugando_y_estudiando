@@ -28,3 +28,5 @@ Settings → Pages → *Deploy from a branch* → rama `main`, carpeta `/ (root)
 
 - **Dados de multiplicar** — tira dos dados y multiplica.
 - **Sumas y restas paso a paso** — columnas con o sin llevadas, de 2 a 4 cifras; modo guiado o «yo solo».
+- **Tablas con cronómetro** — elige las tablas; 60 segundos o 10 preguntas, repaso de fallos y récord.
+- **Fracciones** — leer, pintar, comparar y fracción de un número.

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fracciones</title>
+<style>
+  :root{--bg:#fff8ec;--ink:#2b2a33;--muted:#6b6878;--card:#fff;--line:#f0e2c8;--accent:#ff6b4a;--accent-d:#e0502f;--ok:#1f9d63;--bad:#d6453d;--fill:#ff8a5c}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;justify-content:center;padding:18px 12px 40px}
+  main{width:100%;max-width:500px;text-align:center}
+  h1{font-size:1.6rem;margin:4px 0 12px}
+  [hidden]{display:none !important}
+  .tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+  .tab{font:inherit;font-weight:700;font-size:.98rem;padding:10px 6px;border-radius:14px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .tab[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .seg{display:inline-flex;background:#fff;border:2px solid var(--line);border-radius:999px;padding:3px;margin-bottom:10px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:.9rem;padding:6px 14px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .stats{display:flex;gap:8px;justify-content:center;margin:0 0 12px}
+  .stat{background:#fff;border:2px solid var(--line);border-radius:14px;padding:5px 12px;min-width:96px}
+  .stat b{display:block;font-size:1.2rem}
+  .stat span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stage{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:18px 12px 16px}
+  .prompt{font-size:1.2rem;font-weight:700;margin:0 4px 12px;min-height:1.6rem}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-weight:800;line-height:1.15;margin:0 4px}
+  .frac .num{border-bottom:3px solid currentColor;padding:0 8px 1px}
+  .frac .den{padding:1px 8px 0}
+  .frac.big{font-size:2rem}
+  .visual{display:flex;justify-content:center;margin:6px 0 14px}
+  .visual svg{max-width:100%;height:auto}
+  .part{stroke:var(--ink);stroke-width:3;fill:#fff;transition:fill .12s}
+  .part.on{fill:var(--fill)}
+  .part.tap{cursor:pointer}
+  .options{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .opt{font:inherit;font-size:1.5rem;padding:10px 0;border-radius:16px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .opt:active{transform:translateY(2px)}
+  .opt.wrong{border-color:var(--bad);background:#fff1f0}
+  .opt.right{border-color:var(--ok);background:#effaf4}
+  .cmp{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;margin-bottom:14px}
+  .cmp .side svg{width:100%;max-width:170px;height:auto}
+  .cmp .mid{font-size:2rem;font-weight:800;min-width:44px}
+  .signs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .signs .opt{font-size:2rem;font-weight:800}
+  .row{display:flex;gap:8px;justify-content:center;align-items:center}
+  input{width:120px;font:inherit;font-size:1.8rem;text-align:center;padding:8px;border:3px solid var(--line);border-radius:14px;background:#fff;color:var(--ink)}
+  input:focus{outline:none;border-color:var(--accent)}
+  .groups{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:4px 0 14px}
+  .group{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;border:3px dashed var(--line);border-radius:12px;padding:6px;min-width:56px;max-width:112px}
+  .group.sel{border-style:solid;border-color:var(--accent);background:#fff1e8}
+  .dot{width:16px;height:16px;border-radius:50%;background:var(--ink)}
+  .group.sel .dot{background:var(--accent)}
+  .feedback{min-height:2.6rem;font-size:1.05rem;font-weight:700;margin:12px 6px 6px}
+  .ok{color:var(--ok)} .bad{color:var(--bad)}
+  button.main{font:inherit;font-weight:700;font-size:1.15rem;color:#fff;background:var(--accent);border:0;border-radius:14px;padding:13px 22px;cursor:pointer;box-shadow:0 4px 0 var(--accent-d);width:100%;margin-top:6px}
+  button.main:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-d)}
+  button.ghost{font:inherit;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.95rem;margin-top:10px}
+  .back{display:inline-block;margin-top:18px;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+  <h1>🍕 Fracciones</h1>
+
+  <div class="tabs" id="tabs" role="group" aria-label="Actividad">
+    <button class="tab" data-v="leer" aria-pressed="true">🍕 ¿Qué fracción es?</button>
+    <button class="tab" data-v="pintar" aria-pressed="false">🎨 Pinta la fracción</button>
+    <button class="tab" data-v="comparar" aria-pressed="false">⚖️ Compara</button>
+    <button class="tab" data-v="numero" aria-pressed="false">🔢 De un número</button>
+  </div>
+  <div class="seg" id="dens" role="group" aria-label="Partes">
+    <button data-v="4" aria-pressed="true">Hasta 4 partes</button>
+    <button data-v="6" aria-pressed="false">Hasta 6</button>
+    <button data-v="10" aria-pressed="false">Hasta 10</button>
+  </div>
+
+  <div class="stats" aria-live="polite">
+    <div class="stat"><b id="aciertos">0</b><span>Aciertos</span></div>
+    <div class="stat"><b id="racha">0</b><span>Racha</span></div>
+  </div>
+
+  <section class="stage">
+    <div class="prompt" id="prompt"></div>
+    <div id="area"></div>
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <button class="main" id="primary" hidden>Comprobar</button>
+    <button class="ghost" id="hint" hidden>Pista</button>
+  </section>
+
+  <a class="back" href="../../">← Todas las aplicaciones</a>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var cfg = {mode:'leer', dmax:4};
+  var X = null;                 // ejercicio actual
+  var aciertos = 0, racha = 0;
+
+  function rd(lo,hi){ return lo + Math.floor(Math.random()*(hi-lo+1)); }
+  function pick(a){ return a[rd(0,a.length-1)]; }
+  function shuffle(a){ for (var i=a.length-1;i>0;i--){ var j=rd(0,i), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function denoms(){ var r=[]; for (var d=2; d<=cfg.dmax; d++) r.push(d); return r; }
+  function same(a,b){ return a.n*b.d === b.n*a.d; }
+
+  function el(tag, cls, text){ var e=document.createElement(tag); if (cls) e.className=cls; if (text!==undefined) e.textContent=text; return e; }
+  function sv(tag, attrs){ var e=document.createElementNS(SVGNS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function frac(n,d,big){
+    var f = el('span','frac'+(big?' big':'')); f.setAttribute('data-n',n); f.setAttribute('data-d',d);
+    f.appendChild(el('span','num',n)); f.appendChild(el('span','den',d)); return f;
+  }
+  function say(t, cls){ var f=$('feedback'); f.textContent=t; f.className='feedback'+(cls?' '+cls:''); }
+
+  // ---------- dibujo de fracciones (círculo o barra) ----------
+  // on: función (i) => true si la parte i va pintada. tap: función (i, elemento) o null.
+  function drawFraction(shape, d, on, tap, size){
+    var svg, parts = [], i;
+    if (shape === 'pie'){
+      svg = sv('svg', {viewBox:'0 0 200 200', width:size||190, height:size||190, role:'img'});
+      for (i=0;i<d;i++){
+        var a0 = -Math.PI/2 + 2*Math.PI*i/d, a1 = -Math.PI/2 + 2*Math.PI*(i+1)/d;
+        var x0 = 100+92*Math.cos(a0), y0 = 100+92*Math.sin(a0), x1 = 100+92*Math.cos(a1), y1 = 100+92*Math.sin(a1);
+        var p = sv('path', {d:'M100 100 L'+x0.toFixed(2)+' '+y0.toFixed(2)+' A92 92 0 '+((a1-a0)>Math.PI?1:0)+' 1 '+x1.toFixed(2)+' '+y1.toFixed(2)+' Z'});
+        parts.push(p);
+      }
+    } else {
+      svg = sv('svg', {viewBox:'0 0 300 70', width:size?size*1.5:300, height:size?size*0.35:70, role:'img'});
+      for (i=0;i<d;i++) parts.push(sv('rect', {x:2+296/d*i, y:4, width:296/d, height:62}));
+    }
+    parts.forEach(function(p,i){
+      p.setAttribute('class', 'part'+(on(i)?' on':'')+(tap?' tap':''));
+      p.setAttribute('data-i', i);
+      if (tap) p.addEventListener('click', function(){ tap(i,p); });
+      svg.appendChild(p);
+    });
+    var w = el('div','visual'); w.appendChild(svg); return w;
+  }
+
+  // ---------- 1. ¿Qué fracción es? ----------
+  function genLeer(){
+    var d = pick(denoms()), n = rd(1,d-1), ok = {n:n,d:d};
+    var cand = [{n:d-n,d:d},{n:n,d:d+1},{n:n+1,d:d},{n:n-1,d:d},{n:n,d:d-1},{n:n,d:d+2},{n:n+1,d:d+1}];
+    var opts = [], tries = 0;
+    function valid(f){ return f.n>=1 && f.d>=2 && f.n<f.d && !same(f,ok) && !opts.some(function(o){ return o.n===f.n && o.d===f.d; }); }
+    shuffle(cand).forEach(function(f){ if (opts.length<3 && valid(f)) opts.push(f); });
+    while (opts.length<3 && tries++<200){ var dd=rd(2,cfg.dmax+2), f={n:rd(1,dd-1),d:dd}; if (valid(f)) opts.push(f); }
+    opts.push(ok);
+    return {ok:ok, d:d, n:n, shape:pick(['pie','bar']), opts:shuffle(opts), solved:false, had:false};
+  }
+  function renderLeer(){
+    $('prompt').textContent = '¿Qué fracción está pintada?';
+    var a = $('area'); a.innerHTML='';
+    a.appendChild(drawFraction(X.shape, X.d, function(i){ return i < X.n; }, null));
+    var box = el('div','options');
+    X.opts.forEach(function(f){
+      var b = el('button','opt'); b.appendChild(frac(f.n,f.d)); b.setAttribute('aria-label', f.n+' partes de '+f.d);
+      b.addEventListener('click', function(){
+        if (X.solved) return;
+        if (same(f,X.ok)){ b.className='opt right'; solve(); }
+        else { b.className='opt wrong'; b.disabled=true; fail('Esa no es. Cuenta las partes pintadas y las partes totales 🤔'); }
+      });
+      box.appendChild(b);
+    });
+    a.appendChild(box);
+  }
+
+  // ---------- 2. Pinta la fracción ----------
+  function genPintar(){
+    var d = pick(denoms()); return {d:d, n:rd(1,d-1), shape:pick(['pie','bar']), sel:{}, solved:false, had:false};
+  }
+  function renderPintar(){
+    var p = $('prompt'); p.textContent = 'Pinta '; p.appendChild(frac(X.n,X.d,true));
+    var a = $('area'); a.innerHTML='';
+    a.appendChild(drawFraction(X.shape, X.d, function(){ return false; }, function(i,part){
+      if (X.solved) return;
+      if (X.sel[i]){ delete X.sel[i]; part.setAttribute('class','part tap'); }
+      else { X.sel[i]=true; part.setAttribute('class','part tap on'); }
+    }));
+    $('primary').hidden = false; $('primary').textContent = 'Comprobar';
+  }
+  function checkPintar(){
+    var c = Object.keys(X.sel).length;
+    if (c === X.n) return solve();
+    fail(c > X.n ? 'Has pintado de más. ¿Cuántas partes dice el número de arriba? 🤔' : 'Te faltan partes por pintar 🎨');
+  }
+
+  // ---------- 3. Comparar ----------
+  function genComparar(){
+    var ds = denoms(), f1, f2, tries = 0;
+    while (tries++ < 500){
+      var r = Math.random(), t = r<0.15 ? 'eq' : r<0.5 ? 'sd' : r<0.8 ? 'sn' : 'any', d1, d2;
+      if (t==='eq'){
+        d1 = pick(ds); var m = ds.filter(function(x){ return x!==d1 && x%d1===0; });
+        if (!m.length) continue; d2 = pick(m); var k = d2/d1, n1 = rd(1,d1-1);
+        f1={n:n1,d:d1}; f2={n:n1*k,d:d2};
+      } else if (t==='sd'){
+        d1 = pick(ds); f1={n:rd(1,d1-1),d:d1}; f2={n:rd(1,d1-1),d:d1};
+      } else if (t==='sn'){
+        d1 = pick(ds); d2 = pick(ds); if (d1===d2) continue;
+        var nn = rd(1, Math.min(d1,d2)-1); if (nn<1) continue; f1={n:nn,d:d1}; f2={n:nn,d:d2};
+      } else {
+        d1 = pick(ds); d2 = pick(ds); f1={n:rd(1,d1-1),d:d1}; f2={n:rd(1,d2-1),d:d2};
+      }
+      if (t!=='eq' && same(f1,f2) && t!=='any') continue;
+      if (Math.random()<0.5){ var tmp=f1; f1=f2; f2=tmp; }
+      break;
+    }
+    var cmp = f1.n*f2.d - f2.n*f1.d;
+    return {f1:f1, f2:f2, ans: cmp<0 ? '<' : cmp>0 ? '>' : '=', shape:pick(['pie','bar']), solved:false, had:false};
+  }
+  function renderComparar(){
+    $('prompt').textContent = 'Compara las fracciones';
+    var a = $('area'); a.innerHTML='';
+    var row = el('div','cmp'), mid = el('div','mid','?');
+    function side(f){
+      var sd = el('div','side');
+      sd.appendChild(drawFraction(X.shape, f.d, function(i){ return i < f.n; }, null, 150));
+      sd.appendChild(frac(f.n,f.d,true));
+      return sd;
+    }
+    row.appendChild(side(X.f1)); row.appendChild(mid); row.appendChild(side(X.f2));
+    a.appendChild(row);
+    var signs = el('div','signs');
+    [['<','La primera es menor'],['=','Son iguales'],['>','La primera es mayor']].forEach(function(s){
+      var b = el('button','opt',s[0]); b.setAttribute('aria-label', s[1]);
+      b.addEventListener('click', function(){
+        if (X.solved) return;
+        if (s[0]===X.ans){ mid.textContent = s[0]; b.className='opt right'; solve(); }
+        else { b.className='opt wrong'; b.disabled=true; fail('Mira cuánto está pintado en cada una 🤔'); }
+      });
+      signs.appendChild(b);
+    });
+    a.appendChild(signs);
+  }
+
+  // ---------- 4. Fracción de un número ----------
+  function genNumero(){
+    var d = pick(denoms()), n = rd(1,d-1), k = rd(1, Math.max(2, Math.min(6, Math.floor(40/d))));
+    return {d:d, n:n, k:k, total:d*k, ans:n*k, solved:false, had:false, hinted:false};
+  }
+  function renderNumero(){
+    var p = $('prompt'); p.textContent=''; p.appendChild(frac(X.n,X.d,true)); p.appendChild(document.createTextNode(' de '+X.total+' = ?'));
+    var a = $('area'); a.innerHTML='';
+    var g = el('div','groups'); g.id='groups';
+    for (var i=0;i<X.d;i++){
+      var grp = el('div','group'); grp.setAttribute('data-g', i);
+      for (var j=0;j<X.k;j++) grp.appendChild(el('div','dot'));
+      g.appendChild(grp);
+    }
+    a.appendChild(g);
+    var row = el('div','row'), inp = el('input'); inp.id='ans'; inp.type='text'; inp.inputMode='numeric'; inp.maxLength=3; inp.autocomplete='off';
+    inp.setAttribute('aria-label','Tu respuesta');
+    inp.addEventListener('input', function(){ inp.value = inp.value.replace(/[^0-9]/g,''); });
+    inp.addEventListener('keydown', function(e){ if (e.key==='Enter') primary(); });
+    row.appendChild(inp); a.appendChild(row);
+    $('primary').hidden = false; $('primary').textContent = 'Comprobar'; $('hint').hidden = false;
+    inp.focus({preventScroll:true});
+  }
+  function highlight(){
+    Array.prototype.forEach.call(document.querySelectorAll('#groups .group'), function(g,i){ if (i < X.n) g.className='group sel'; });
+  }
+  function checkNumero(){
+    var v = parseInt($('ans').value,10);
+    if (isNaN(v)) { $('ans').focus(); return; }
+    if (v === X.ans){ highlight(); return solve(); }
+    fail(v > X.ans ? 'Te has pasado. Piensa: ¿cuántos hay en cada grupo? 🤔' : 'Te has quedado corto. ¡Prueba otra vez! 💪');
+    $('ans').select();
+  }
+
+  // ---------- flujo común ----------
+  function solve(){
+    X.solved = true;
+    if (!X.had && !X.hinted){ aciertos++; racha++; say('¡Muy bien! 🎉', 'ok'); }
+    else { say('¡Correcto! Ahora a por el siguiente 💪', 'ok'); }
+    updateStats();
+    $('hint').hidden = true;
+    var pb = $('primary'); pb.hidden = false; pb.textContent = 'Siguiente ➜'; pb.setAttribute('data-next','1'); pb.focus({preventScroll:true});
+  }
+  function fail(msg){
+    X.had = true; racha = 0; updateStats(); say(msg, 'bad');
+  }
+  function updateStats(){ $('aciertos').textContent = aciertos; $('racha').textContent = racha; }
+
+  function primary(){
+    if (!X) return;
+    if ($('primary').getAttribute('data-next')) return next();
+    if (cfg.mode==='pintar') checkPintar();
+    else if (cfg.mode==='numero') checkNumero();
+  }
+  function hint(){
+    if (cfg.mode!=='numero' || !X || X.solved) return;
+    X.hinted = true; racha = 0; updateStats(); highlight();
+    say('Hay '+X.k+' en cada grupo. Coge '+X.n+' '+(X.n===1?'grupo':'grupos')+'.', '');
+    $('ans').focus();
+  }
+  function next(){
+    $('primary').removeAttribute('data-next');
+    $('primary').hidden = true; $('hint').hidden = true;
+    say('', '');
+    if (cfg.mode==='leer'){ X = genLeer(); renderLeer(); }
+    else if (cfg.mode==='pintar'){ X = genPintar(); renderPintar(); }
+    else if (cfg.mode==='comparar'){ X = genComparar(); renderComparar(); }
+    else { X = genNumero(); renderNumero(); }
+  }
+
+  function group(id, key){
+    var g = $(id);
+    Array.prototype.forEach.call(g.querySelectorAll('button'), function(b){
+      b.addEventListener('click', function(){
+        var v = b.getAttribute('data-v');
+        cfg[key] = key==='dmax' ? parseInt(v,10) : v;
+        Array.prototype.forEach.call(g.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+        next();
+      });
+    });
+  }
+  group('tabs','mode'); group('dens','dmax');
+  $('primary').addEventListener('click', primary);
+  $('hint').addEventListener('click', hint);
+  next();
+})();
+</script>
+</body>
+</html>

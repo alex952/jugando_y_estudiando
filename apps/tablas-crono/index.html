@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablas con cronómetro</title>
+<style>
+  :root{--bg:#fff8ec;--ink:#2b2a33;--muted:#6b6878;--card:#fff;--line:#f0e2c8;--accent:#ff6b4a;--accent-d:#e0502f;--ok:#1f9d63;--bad:#d6453d}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;justify-content:center;padding:18px 12px 40px}
+  main{width:100%;max-width:480px;text-align:center}
+  h1{font-size:1.6rem;margin:4px 0 14px}
+  h2{font-size:1rem;margin:16px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  [hidden]{display:none !important}
+  .panel{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:16px 14px 18px}
+  .chips{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .chip{font:inherit;font-weight:800;font-size:1.3rem;padding:10px 0;border-radius:14px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .quick{display:flex;gap:16px;justify-content:center;margin-top:8px}
+  .seg{display:inline-flex;background:#fff;border:2px solid var(--line);border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:.95rem;padding:7px 16px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .record{color:var(--muted);font-size:.95rem;min-height:1.4rem;margin:12px 0 4px}
+  button.main{font:inherit;font-weight:700;font-size:1.2rem;color:#fff;background:var(--accent);border:0;border-radius:14px;padding:14px 22px;cursor:pointer;box-shadow:0 4px 0 var(--accent-d);width:100%;margin-top:10px}
+  button.main:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-d)}
+  button.main:disabled{opacity:.45;cursor:default}
+  button.alt{font:inherit;font-weight:700;font-size:1.05rem;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px 20px;cursor:pointer;width:100%;margin-top:10px}
+  button.ghost{font:inherit;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.95rem}
+  .hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:800}
+  .time{font-size:2.4rem;font-variant-numeric:tabular-nums}
+  .time.low{color:var(--bad)}
+  .count{font-size:1.1rem}
+  .bar{height:12px;background:var(--line);border-radius:999px;overflow:hidden;margin-bottom:16px}
+  .bar div{height:100%;width:100%;background:var(--accent);border-radius:999px;transition:width .15s linear}
+  .qcard{background:var(--card);border:3px solid var(--line);border-radius:24px;padding:26px 12px 22px;transition:border-color .1s,background .1s}
+  .qcard.good{border-color:var(--ok);background:#effaf4}
+  .qcard.wrong{border-color:var(--bad);background:#fff1f0}
+  .question{font-size:3rem;font-weight:800;font-variant-numeric:tabular-nums;margin-bottom:12px}
+  .row{display:flex;gap:8px;justify-content:center}
+  input{width:130px;font:inherit;font-size:2rem;text-align:center;padding:8px;border:3px solid var(--line);border-radius:14px;background:#fff;color:var(--ink)}
+  input:focus{outline:none;border-color:var(--accent)}
+  .row button{font:inherit;font-weight:800;font-size:1.3rem;border:0;border-radius:14px;padding:0 20px;background:var(--ink);color:#fff;cursor:pointer}
+  .reveal{min-height:1.6rem;margin-top:12px;font-size:1.15rem;font-weight:800;color:var(--bad)}
+  .big{font-size:3.2rem;font-weight:800;margin:6px 0}
+  .res-grid{display:flex;gap:8px;justify-content:center;margin:10px 0}
+  .stat{background:#fff;border:2px solid var(--line);border-radius:14px;padding:6px 14px;min-width:92px}
+  .stat b{display:block;font-size:1.3rem}
+  .stat span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .fails{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}
+  .fails span{background:#fff1f0;border:2px solid #f3b8b4;border-radius:10px;padding:4px 10px;font-weight:700}
+  .newrec{color:var(--ok);font-weight:800;min-height:1.4rem}
+  .back{display:inline-block;margin-top:18px;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+  <h1>⏱️ Tablas con cronómetro</h1>
+
+  <section class="panel" id="setup">
+    <h2>Tablas a practicar</h2>
+    <div class="chips" id="chips"></div>
+    <div class="quick">
+      <button class="ghost" id="all">Todas</button>
+      <button class="ghost" id="none">Quitar todas</button>
+    </div>
+    <h2>Modo</h2>
+    <div class="seg" id="modes" role="group" aria-label="Modo">
+      <button data-v="60" aria-pressed="true">60 segundos</button>
+      <button data-v="10" aria-pressed="false">10 preguntas</button>
+    </div>
+    <div class="record" id="record"></div>
+    <button class="main" id="start">¡Empezar!</button>
+  </section>
+
+  <section id="game" hidden>
+    <div class="hud">
+      <div class="time" id="time">60.0</div>
+      <div class="count" id="count">✓ 0 &nbsp; ✗ 0</div>
+    </div>
+    <div class="bar"><div id="fill"></div></div>
+    <div class="qcard" id="qcard">
+      <div class="question" id="q"></div>
+      <div class="row">
+        <input id="a" type="text" inputmode="numeric" autocomplete="off" aria-label="Tu respuesta">
+        <button id="ok" aria-label="Enviar">OK</button>
+      </div>
+      <div class="reveal" id="reveal"></div>
+    </div>
+    <button class="ghost" id="quit" style="margin-top:14px">Terminar</button>
+  </section>
+
+  <section class="panel" id="results" hidden>
+    <div id="rtitle" style="font-weight:800;font-size:1.2rem"></div>
+    <div class="big" id="rbig"></div>
+    <div class="res-grid">
+      <div class="stat"><b id="rok">0</b><span>Aciertos</span></div>
+      <div class="stat"><b id="rbad">0</b><span>Fallos</span></div>
+      <div class="stat"><b id="rtime">0</b><span id="rtimelabel">Tiempo</span></div>
+    </div>
+    <div class="newrec" id="newrec"></div>
+    <div id="failbox" hidden>
+      <h2>Para repasar</h2>
+      <div class="fails" id="fails"></div>
+      <button class="alt" id="practice">Practicar solo estos fallos</button>
+    </div>
+    <button class="main" id="again">Jugar otra vez</button>
+    <button class="ghost" id="change" style="margin-top:12px">Cambiar tablas</button>
+  </section>
+
+  <a class="back" href="../../">← Todas las aplicaciones</a>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var selected = {2:true,3:true,4:true,5:true};
+  var mode = '60';
+  var G = null, timer = null, lockTimer = null, custom = null;
+  var KEY = 'tablas-crono:';
+
+  function load(k){ try { var v = localStorage.getItem(KEY+k); return v===null ? null : parseFloat(v); } catch(e){ return null; } }
+  function save(k,v){ try { localStorage.setItem(KEY+k, String(v)); } catch(e){} }
+  function rd(lo,hi){ return lo + Math.floor(Math.random()*(hi-lo+1)); }
+  function shuffle(a){ for (var i=a.length-1;i>0;i--){ var j=rd(0,i), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function fmt(ms){ return (ms/1000).toFixed(1); }
+
+  // ---------- pantalla de inicio ----------
+  var chips = $('chips');
+  for (var t=1;t<=10;t++){
+    (function(t){
+      var b = document.createElement('button');
+      b.className='chip'; b.textContent=t; b.setAttribute('aria-pressed', selected[t]?'true':'false');
+      b.addEventListener('click', function(){
+        selected[t] = !selected[t]; b.setAttribute('aria-pressed', selected[t]?'true':'false'); refreshSetup();
+      });
+      chips.appendChild(b);
+    })(t);
+  }
+  function setAll(on){
+    selected = {};
+    Array.prototype.forEach.call(chips.children, function(b,i){ if (on) selected[i+1]=true; b.setAttribute('aria-pressed', on?'true':'false'); });
+    refreshSetup();
+  }
+  $('all').addEventListener('click', function(){ setAll(true); });
+  $('none').addEventListener('click', function(){ setAll(false); });
+  Array.prototype.forEach.call($('modes').children, function(b){
+    b.addEventListener('click', function(){
+      mode = b.getAttribute('data-v');
+      Array.prototype.forEach.call($('modes').children, function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+      refreshSetup();
+    });
+  });
+  function tablesList(){ return Object.keys(selected).filter(function(k){ return selected[k]; }).map(Number); }
+  function refreshSetup(){
+    $('start').disabled = tablesList().length === 0;
+    var best = load('best'+mode), r = $('record');
+    if (best === null) r.textContent = '';
+    else r.textContent = mode==='60' ? '🏆 Récord: '+best+' aciertos' : '🏆 Mejor puntuación: '+best.toFixed(1)+' s';
+  }
+
+  // ---------- juego ----------
+  function makePool(){
+    if (custom) return custom.slice();
+    var pool = [];
+    tablesList().forEach(function(t){ for (var b=1;b<=10;b++) pool.push([t,b]); });
+    return pool;
+  }
+  function nextQuestion(){
+    var q;
+    if (G.mode === '10'){
+      if (G.queue.length === 0) G.queue = shuffle(makePool());
+      q = G.queue.pop();
+    } else {
+      var pool = makePool(), tries = 0;
+      do { q = pool[rd(0,pool.length-1)]; tries++; } while (G.last && pool.length>1 && q[0]===G.last[0] && q[1]===G.last[1] && tries<20);
+    }
+    G.last = q;
+    G.cur = (Math.random()<0.5) ? [q[0],q[1]] : [q[1],q[0]];
+    $('q').textContent = G.cur[0]+' × '+G.cur[1];
+    $('reveal').textContent = '';
+    $('qcard').className = 'qcard';
+    var a = $('a'); a.value=''; a.disabled=false; $('ok').disabled=false; a.focus({preventScroll:true});
+    G.locked = false;
+  }
+  function updateHud(){
+    var el = Date.now() - G.start;
+    if (G.mode === '60'){
+      var rem = Math.max(0, 60000 - el);
+      $('time').textContent = fmt(rem);
+      $('time').className = 'time' + (rem<=10000 ? ' low' : '');
+      $('fill').style.width = (rem/600)+'%';
+      if (rem <= 0) finish();
+    } else {
+      $('time').textContent = fmt(el);
+      $('time').className = 'time';
+      $('fill').style.width = (G.ok+G.bad)/10*100+'%';
+    }
+    $('count').textContent = '✓ '+G.ok+'   ✗ '+G.bad + (G.mode==='10' ? '   ('+Math.min(10,G.ok+G.bad+1)+'/10)' : '');
+  }
+  function start(){
+    var n = custom ? 10 : 0;
+    G = {mode: custom ? '10' : mode, start: Date.now(), ok:0, bad:0, fails:[], queue:[], last:null, cur:null, locked:false, custom: !!custom};
+    $('setup').hidden = true; $('results').hidden = true; $('game').hidden = false;
+    nextQuestion(); updateHud();
+    clearInterval(timer); timer = setInterval(updateHud, 100);
+  }
+  function submit(){
+    if (!G || G.locked) return;
+    var v = parseInt($('a').value,10);
+    if (isNaN(v)) { $('a').focus(); return; }
+    var c = G.cur[0]*G.cur[1];
+    G.locked = true;
+    if (v === c){
+      G.ok++; $('qcard').className = 'qcard good';
+      updateHud();
+      if (G.mode==='10' && G.ok+G.bad>=10) return finish();
+      lockTimer = setTimeout(function(){ if (G && !$('game').hidden) nextQuestion(); }, 250);
+    } else {
+      G.bad++;
+      if (!G.fails.some(function(f){ return f[0]===G.cur[0] && f[1]===G.cur[1]; })) G.fails.push([G.cur[0],G.cur[1]]);
+      $('qcard').className = 'qcard wrong';
+      $('reveal').textContent = G.cur[0]+' × '+G.cur[1]+' = '+c;
+      $('a').disabled = true; $('ok').disabled = true;
+      updateHud();
+      if (G.mode==='10' && G.ok+G.bad>=10) { lockTimer = setTimeout(finish, 900); return; }
+      lockTimer = setTimeout(function(){ if (G && !$('game').hidden) nextQuestion(); }, 1100);
+    }
+  }
+  function finish(){
+    if (!G || G.finished) return;
+    G.finished = true;
+    clearInterval(timer); clearTimeout(lockTimer);
+    var el = Math.min(Date.now() - G.start, G.mode==='60' ? 60000 : Infinity);
+    $('game').hidden = true; $('results').hidden = false;
+    $('rok').textContent = G.ok; $('rbad').textContent = G.bad;
+    var rec = '';
+    if (G.mode === '60'){
+      $('rtitle').textContent = '¡Se acabó el tiempo!';
+      $('rbig').textContent = G.ok + (G.ok===1 ? ' acierto' : ' aciertos');
+      $('rtimelabel').textContent = 'Tiempo'; $('rtime').textContent = '60 s';
+      if (!G.custom){
+        var best = load('best60');
+        if (G.ok > 0 && (best === null || G.ok > best)){ save('best60', G.ok); rec = best===null ? '' : '🏆 ¡Nuevo récord!'; if (best===null) rec='🏆 ¡Primer récord!'; }
+      }
+    } else {
+      var score = el/1000 + G.bad*5;
+      $('rtitle').textContent = '¡Terminado!';
+      $('rbig').textContent = score.toFixed(1)+' s';
+      $('rtimelabel').textContent = 'Tiempo'; $('rtime').textContent = fmt(el)+' s';
+      if (G.bad) $('rtitle').textContent = '¡Terminado! (cada fallo suma 5 s)';
+      if (!G.custom){
+        var b2 = load('best10');
+        if (b2 === null || score < b2){ save('best10', score); rec = '🏆 ¡Nuevo récord!'; if (b2===null) rec='🏆 ¡Primer récord!'; }
+      }
+    }
+    $('newrec').textContent = rec;
+    var fb = $('fails'); fb.innerHTML = '';
+    G.fails.forEach(function(f){
+      var s = document.createElement('span'); s.textContent = f[0]+' × '+f[1]+' = '+(f[0]*f[1]); fb.appendChild(s);
+    });
+    $('failbox').hidden = G.fails.length === 0;
+    G.failPool = G.fails.slice();
+    $('again').focus({preventScroll:true});
+  }
+
+  $('start').addEventListener('click', function(){ custom = null; start(); });
+  $('ok').addEventListener('click', submit);
+  $('a').addEventListener('keydown', function(e){ if (e.key==='Enter') submit(); });
+  $('a').addEventListener('input', function(){ this.value = this.value.replace(/[^0-9]/g,''); });
+  $('quit').addEventListener('click', function(){ finish(); });
+  $('again').addEventListener('click', function(){ start(); });
+  $('practice').addEventListener('click', function(){ custom = G.failPool.slice(); start(); });
+  $('change').addEventListener('click', function(){
+    custom = null; clearInterval(timer); clearTimeout(lockTimer);
+    $('results').hidden = true; $('game').hidden = true; $('setup').hidden = false; refreshSetup();
+  });
+
+  refreshSetup();
+})();
+</script>
+</body>
+</html>

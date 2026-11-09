@@ -12,5 +12,19 @@
     "emoji": "➕",
     "description": "Operaciones en columnas, con o sin llevadas, columna a columna.",
     "topic": "Matemáticas"
+  },
+  {
+    "folder": "tablas-crono",
+    "title": "Tablas con cronómetro",
+    "emoji": "⏱️",
+    "description": "Elige tablas y contrarreloj: 60 segundos o 10 preguntas.",
+    "topic": "Matemáticas"
+  },
+  {
+    "folder": "fracciones",
+    "title": "Fracciones",
+    "emoji": "🍕",
+    "description": "Leer, pintar, comparar y calcular la fracción de un número.",
+    "topic": "Matemáticas"
   }
 ]
