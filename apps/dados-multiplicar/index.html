@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dados de multiplicar</title>
+<style>
+  :root{
+    --bg:#fff8ec; --ink:#2b2a33; --muted:#6b6878; --card:#ffffff;
+    --accent:#ff6b4a; --accent-d:#e0502f; --ok:#1f9d63; --bad:#d6453d; --line:#f0e2c8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family: "Trebuchet MS","Segoe UI",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink);
+    min-height:100vh; display:flex; justify-content:center; padding:20px 14px 40px;
+  }
+  main{width:100%; max-width:480px; text-align:center}
+  h1{font-size:1.6rem; margin:6px 0 4px}
+  .sub{color:var(--muted); margin:0 0 16px; font-size:.95rem}
+  .stats{display:flex; gap:8px; justify-content:center; margin-bottom:14px}
+  .stat{background:var(--card); border:2px solid var(--line); border-radius:14px; padding:6px 12px; min-width:92px}
+  .stat b{display:block; font-size:1.3rem}
+  .stat span{font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+  .seg{display:inline-flex; background:var(--card); border:2px solid var(--line); border-radius:999px; padding:3px; margin-bottom:16px}
+  .seg button{border:0; background:transparent; font:inherit; font-size:.9rem; padding:6px 14px; border-radius:999px; color:var(--muted); cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink); color:#fff}
+  .stage{background:var(--card); border:2px solid var(--line); border-radius:24px; padding:22px 12px 18px}
+  .dice{display:flex; align-items:center; justify-content:center; gap:14px; min-height:110px}
+  .times{font-size:2rem; font-weight:700; color:var(--muted)}
+  .die{
+    width:96px; height:96px; border-radius:20px; background:#fff;
+    border:3px solid var(--ink); box-shadow:0 5px 0 var(--ink);
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
+    padding:12px; position:relative;
+  }
+  .pip{width:18px; height:18px; border-radius:50%; background:var(--ink); place-self:center}
+  .die.num{display:flex; align-items:center; justify-content:center; font-size:2.6rem; font-weight:800; padding:0}
+  .die.rolling{animation:shake .12s linear infinite}
+  @keyframes shake{
+    0%{transform:rotate(-8deg) translateY(0)} 50%{transform:rotate(8deg) translateY(-6px)} 100%{transform:rotate(-8deg) translateY(0)}
+  }
+  .question{font-size:2.2rem; font-weight:800; margin:18px 0 10px; min-height:2.8rem}
+  .row{display:flex; gap:8px; justify-content:center; align-items:center}
+  input{
+    width:120px; font:inherit; font-size:1.6rem; text-align:center; padding:8px;
+    border:3px solid var(--line); border-radius:14px; background:#fff; color:var(--ink);
+  }
+  input:focus{outline:none; border-color:var(--accent)}
+  button.main{
+    font:inherit; font-weight:700; font-size:1.05rem; color:#fff; background:var(--accent);
+    border:0; border-radius:14px; padding:12px 20px; cursor:pointer; box-shadow:0 4px 0 var(--accent-d);
+  }
+  button.main:active{transform:translateY(3px); box-shadow:0 1px 0 var(--accent-d)}
+  button.main:disabled{opacity:.45; cursor:default}
+  button.ghost{font:inherit; background:none; border:0; color:var(--muted); text-decoration:underline; cursor:pointer; margin-top:10px; font-size:.95rem}
+  .roll{width:100%; margin-top:18px; font-size:1.25rem; padding:15px}
+  .feedback{min-height:1.8rem; margin-top:12px; font-size:1.2rem; font-weight:700}
+  .ok{color:var(--ok)} .bad{color:var(--bad)}
+  .history{margin-top:18px; text-align:left}
+  .history h2{font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 6px}
+  .history ul{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px}
+  .history li{background:var(--card); border:2px solid var(--line); border-radius:10px; padding:4px 9px; font-size:.9rem}
+  .history li.f{border-color:#f3b8b4; background:#fff1f0}
+  .history li.s{border-color:#b7e3cd; background:#effaf4}
+  @media (prefers-reduced-motion:reduce){ .die.rolling{animation:none} }
+</style>
+</head>
+<body>
+<main>
+  <h1>🎲 Dados de multiplicar</h1>
+  <p class="sub">Tira los dados y multiplica los dos números.</p>
+
+  <div class="stats" aria-live="polite">
+    <div class="stat"><b id="score">0 / 0</b><span>Aciertos</span></div>
+    <div class="stat"><b id="streak">0</b><span>Racha</span></div>
+  </div>
+
+  <div class="seg" role="group" aria-label="Tipo de dado">
+    <button data-sides="6" aria-pressed="true">Dados de 6</button>
+    <button data-sides="10" aria-pressed="false">Dados de 10</button>
+  </div>
+
+  <section class="stage">
+    <div class="dice">
+      <div class="die" id="d1" aria-label="Dado 1"></div>
+      <div class="times">×</div>
+      <div class="die" id="d2" aria-label="Dado 2"></div>
+    </div>
+
+    <div class="question" id="question">¿Listo?</div>
+
+    <div class="row">
+      <input id="answer" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="?" disabled aria-label="Tu respuesta">
+      <button class="main" id="check" disabled>Comprobar</button>
+    </div>
+    <button class="ghost" id="reveal" disabled>Ver la respuesta</button>
+
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+
+    <button class="main roll" id="roll">Tirar los dados</button>
+  </section>
+
+  <div class="history">
+    <h2>Últimas tiradas</h2>
+    <ul id="history"></ul>
+  </div>
+</main>
+
+<script>
+(function(){
+  var sides = 6, a = 0, b = 0, answered = true, score = 0, total = 0, streak = 0, busy = false;
+  var $ = function(id){return document.getElementById(id)};
+  var d1=$('d1'), d2=$('d2'), q=$('question'), inp=$('answer'), chk=$('check'),
+      rev=$('reveal'), fb=$('feedback'), rollBtn=$('roll'), hist=$('history');
+
+  // posiciones de los puntos en una rejilla 3x3 (1..9)
+  var PIPS = {1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]};
+
+  function draw(el, n){
+    el.innerHTML = '';
+    if (sides === 6){
+      el.className = el.className.replace(' num','');
+      PIPS[n].forEach(function(pos){
+        var p = document.createElement('div');
+        p.className = 'pip';
+        p.style.gridColumn = ((pos-1)%3)+1;
+        p.style.gridRow = Math.floor((pos-1)/3)+1;
+        el.appendChild(p);
+      });
+    } else {
+      if (el.className.indexOf(' num') < 0) el.className += ' num';
+      el.textContent = n;
+    }
+  }
+  function rnd(){ return 1 + Math.floor(Math.random()*sides); }
+
+  function setInputs(on){
+    inp.disabled = !on; chk.disabled = !on; rev.disabled = !on;
+    if (on){ inp.value=''; inp.focus(); }
+  }
+
+  function updateStats(){
+    $('score').textContent = score + ' / ' + total;
+    $('streak').textContent = streak;
+  }
+
+  function addHistory(text, ok){
+    var li = document.createElement('li');
+    li.textContent = text; li.className = ok ? 's' : 'f';
+    hist.insertBefore(li, hist.firstChild);
+    while (hist.children.length > 8) hist.removeChild(hist.lastChild);
+  }
+
+  function roll(){
+    if (busy) return;
+    busy = true; answered = false;
+    fb.textContent = ''; fb.className = 'feedback';
+    q.textContent = '…';
+    setInputs(false); rollBtn.disabled = true;
+    d1.classList.add('rolling'); d2.classList.add('rolling');
+    var ticks = 0;
+    var t = setInterval(function(){
+      draw(d1, rnd()); draw(d2, rnd());
+      if (++ticks >= 9){
+        clearInterval(t);
+        a = rnd(); b = rnd();
+        draw(d1, a); draw(d2, b);
+        d1.classList.remove('rolling'); d2.classList.remove('rolling');
+        q.textContent = a + ' × ' + b + ' = ?';
+        busy = false; rollBtn.disabled = false;
+        setInputs(true);
+      }
+    }, 80);
+  }
+
+  function check(){
+    if (answered || busy) return;
+    var v = parseInt(inp.value, 10);
+    if (isNaN(v)) { inp.focus(); return; }
+    var right = a*b;
+    total++;
+    if (v === right){
+      score++; streak++; answered = true;
+      fb.textContent = '¡Correcto! 🎉'; fb.className = 'feedback ok';
+      q.textContent = a + ' × ' + b + ' = ' + right;
+      addHistory(a+'×'+b+'='+right, true);
+      setInputs(false); inp.value = v; rev.disabled = true;
+    } else {
+      streak = 0;
+      fb.textContent = 'Casi… ¡inténtalo otra vez! 💪'; fb.className = 'feedback bad';
+      inp.select();
+    }
+    updateStats();
+  }
+
+  function reveal(){
+    if (answered) return;
+    answered = true; total++; streak = 0;
+    var right = a*b;
+    q.textContent = a + ' × ' + b + ' = ' + right;
+    fb.textContent = 'Ahora te la sabes: ' + a + ' × ' + b + ' = ' + right; fb.className = 'feedback';
+    addHistory(a+'×'+b+'='+right, false);
+    setInputs(false); rev.disabled = true;
+    updateStats();
+  }
+
+  rollBtn.addEventListener('click', roll);
+  chk.addEventListener('click', check);
+  rev.addEventListener('click', reveal);
+  inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') check(); });
+  inp.addEventListener('input', function(){ inp.value = inp.value.replace(/[^0-9]/g,''); });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.seg button'), function(btn){
+    btn.addEventListener('click', function(){
+      sides = parseInt(btn.getAttribute('data-sides'), 10);
+      Array.prototype.forEach.call(document.querySelectorAll('.seg button'), function(x){
+        x.setAttribute('aria-pressed', x === btn ? 'true' : 'false');
+      });
+      draw(d1, 1); draw(d2, 1);
+      q.textContent = '¿Listo?'; fb.textContent = ''; setInputs(false);
+      answered = true;
+    });
+  });
+
+  draw(d1, 3); draw(d2, 4);
+  updateStats();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repaso en casa</title>
+<style>
+  :root{--bg:#fff8ec;--ink:#2b2a33;--muted:#6b6878;--card:#fff;--line:#f0e2c8;--accent:#ff6b4a}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:24px 14px 48px}
+  main{max-width:720px;margin:0 auto}
+  h1{font-size:1.9rem;margin:0 0 4px;text-align:center}
+  .sub{color:var(--muted);text-align:center;margin:0 0 24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+  a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 4px 0 var(--line);transition:transform .1s}
+  a.card:hover,a.card:focus-visible{transform:translateY(-3px);border-color:var(--accent);outline:none}
+  .emoji{font-size:2.4rem}
+  .card h2{font-size:1.1rem;margin:8px 0 4px}
+  .card p{margin:0;color:var(--muted);font-size:.92rem}
+  .tag{display:inline-block;margin-top:10px;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;background:#fff1e0;border-radius:999px;padding:3px 9px;color:#9a5b12}
+  .empty{text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <h1>📚 Repaso en casa</h1>
+  <p class="sub">Pequeñas aplicaciones para practicar jugando.</p>
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="empty" hidden>Todavía no hay aplicaciones.</p>
+</main>
+<script>
+fetch('apps.json').then(function(r){return r.json()}).then(function(apps){
+  var grid=document.getElementById('grid');
+  if(!apps.length){document.getElementById('empty').hidden=false;return;}
+  apps.forEach(function(a){
+    var el=document.createElement('a');
+    el.className='card';
+    el.href='apps/'+a.folder+'/';
+    var e=document.createElement('div');e.className='emoji';e.textContent=a.emoji||'🧩';
+    var h=document.createElement('h2');h.textContent=a.title;
+    var p=document.createElement('p');p.textContent=a.description||'';
+    el.appendChild(e);el.appendChild(h);el.appendChild(p);
+    if(a.topic){var t=document.createElement('span');t.className='tag';t.textContent=a.topic;el.appendChild(t);}
+    grid.appendChild(el);
+  });
+}).catch(function(){
+  var e=document.getElementById('empty');e.textContent='No se pudo cargar la lista de aplicaciones.';e.hidden=false;
+});
+</script>
+</body>
+</html>
