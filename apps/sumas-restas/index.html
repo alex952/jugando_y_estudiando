@@ -44,6 +44,10 @@
   button.main{font:inherit;font-weight:700;font-size:1.15rem;color:#fff;background:var(--accent);border:0;border-radius:14px;
               padding:13px 22px;cursor:pointer;box-shadow:0 4px 0 var(--accent-d);width:100%}
   button.main:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-d)}
+  button.alt{font:inherit;font-weight:700;font-size:1.05rem;color:var(--ink);background:#fff;border:3px solid var(--ink);
+             border-radius:14px;padding:10px 20px;cursor:pointer;width:100%;margin-top:10px}
+  button.alt[hidden]{display:none}
+  .cell.carry input{max-width:46px;font-size:1.2rem;padding:3px 2px;border-width:2px;border-style:dashed;color:var(--accent)}
   .links{display:flex;gap:18px;justify-content:center;margin-top:10px}
   button.ghost{font:inherit;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.95rem}
   button.ghost[hidden]{display:none}
@@ -68,6 +72,10 @@
       <button data-v="3" aria-pressed="false">3 cifras</button>
       <button data-v="4" aria-pressed="false">4 cifras</button>
     </div>
+    <div class="seg" role="group" aria-label="Ayuda" data-group="mode">
+      <button data-v="guiado" aria-pressed="true">Guiado</button>
+      <button data-v="solo" aria-pressed="false">Yo solo</button>
+    </div>
   </div>
 
   <div class="stats" aria-live="polite">
@@ -80,6 +88,7 @@
     <div class="prompt" id="prompt"></div>
     <div class="feedback" id="feedback" aria-live="polite"></div>
     <button class="main" id="primary">Comprobar</button>
+    <button class="alt" id="borrow" hidden>Pedir prestado</button>
     <div class="links">
       <button class="ghost" id="hint">Ver la respuesta</button>
       <button class="ghost" id="skip">Otro ejercicio</button>
@@ -93,13 +102,14 @@
 (function(){
   var NAMES = ['Unidades','Decenas','Centenas','Millares'];
   var SHORT = ['U','D','C','UM'];
+  var LOWER = ['las unidades','las decenas','las centenas','los millares'];
   var FROM  = ['','las decenas','las centenas','los millares'];
   var CONV  = ['','1 decena = 10 unidades','1 centena = 10 decenas','1 millar = 10 centenas'];
-  var cfg = {op:'+', carry:'no', n:2};
+  var cfg = {op:'+', carry:'no', n:2, mode:'guiado'};
   var P = null, S = null, hechos = 0, perfectos = 0;
 
   var $ = function(id){ return document.getElementById(id); };
-  var board=$('board'), promptEl=$('prompt'), fb=$('feedback'), primaryBtn=$('primary'), hintBtn=$('hint'), skipBtn=$('skip');
+  var borrowBtn=$('borrow'), board=$('board'), promptEl=$('prompt'), fb=$('feedback'), primaryBtn=$('primary'), hintBtn=$('hint'), skipBtn=$('skip');
 
   function rd(lo,hi){ return lo + Math.floor(Math.random()*(hi-lo+1)); }
   function num(arr){ var s=0; for (var i=arr.length-1;i>=0;i--) s = s*10 + (arr[i]||0); return s; }
@@ -118,14 +128,14 @@
       }
       if (cfg.op === '+'){
         var k = carriesIn(a,b);
-        if (want ? k>0 : k===0) return {op:'+', n:n, a:a, b:b};
+        if (want ? k>0 : k===0) return {op:'+', n:n, a:a, b:b, mode:cfg.mode};
       } else {
         if (num(a) <= num(b)) continue;
         var m = borrowsIn(a,b);
-        if (want ? m>0 : m===0) return {op:'-', n:n, a:a, b:b};
+        if (want ? m>0 : m===0) return {op:'-', n:n, a:a, b:b, mode:cfg.mode};
       }
     }
-    return cfg.op==='+' ? {op:'+',n:2,a:[7,2],b:[5,1]} : {op:'-',n:2,a:[3,5],b:[8,2]};
+    return cfg.op==='+' ? {op:'+',n:2,a:[7,2],b:[5,1],mode:cfg.mode} : {op:'-',n:2,a:[3,5],b:[8,2],mode:cfg.mode};
   }
 
   function newProblem(){
@@ -161,11 +171,22 @@
     var n = P.n, add = P.op==='+', inp = null;
     board.style.gridTemplateColumns = 'repeat('+(n+1)+', minmax(0,1fr))';
     board.innerHTML = '';
-    var asking = !S.done && !needBorrow();
+    var solo = P.mode==='solo', guidedBorrow = !solo && needBorrow();
+    var asking = !S.done && !guidedBorrow;
+    var carryInp = null;
     function each(fn){ for (var c=0;c<=n;c++){ var p=n-c; fn(p, !S.done && p===S.pos); } }
 
     each(function(p,a){ board.appendChild(cell('lab', p<n ? SHORT[p] : '', a)); });
-    if (add) each(function(p,a){ board.appendChild(cell('carry', S.carries[p] ? S.carries[p] : '', a)); });
+    if (add) each(function(p,a){
+      if (solo && asking && p===S.pos+1){
+        carryInp = document.createElement('input');
+        carryInp.id='carryIn'; carryInp.type='text'; carryInp.inputMode='numeric'; carryInp.maxLength=1; carryInp.autocomplete='off';
+        carryInp.setAttribute('aria-label','Llevada');
+        carryInp.addEventListener('input', function(){ carryInp.value = carryInp.value.replace(/[^0-9]/g,''); });
+        carryInp.addEventListener('keydown', function(e){ if (e.key==='Enter') primary(); });
+        board.appendChild(cell('carry', carryInp, false));
+      } else board.appendChild(cell('carry', S.carries[p] ? S.carries[p] : '', a));
+    });
     each(function(p,a){ board.appendChild(p<n ? topCell(p,a) : cell('top','',a)); });
     each(function(p,a){ board.appendChild(p<n ? cell('bot', P.b[p], a) : cell('bot sign', add?'+':'−', a)); });
     each(function(p,a){
@@ -173,7 +194,7 @@
       else if (p===n && S.res[n]!==undefined) board.appendChild(cell('ans', S.res[n], a));
       else if (p<n && a && asking){
         inp = document.createElement('input');
-        inp.id='ans'; inp.type='text'; inp.inputMode='numeric'; inp.maxLength=2; inp.autocomplete='off';
+        inp.id='ans'; inp.type='text'; inp.inputMode='numeric'; inp.maxLength = (solo && add) ? 1 : 2; inp.autocomplete='off';
         inp.setAttribute('aria-label','Tu respuesta');
         inp.addEventListener('input', function(){ inp.value = inp.value.replace(/[^0-9]/g,''); });
         inp.addEventListener('keydown', function(e){ if (e.key==='Enter') primary(); });
@@ -185,8 +206,12 @@
     var t, sym = add ? '+' : '−';
     if (S.done){
       t = num(P.a)+' '+sym+' '+num(P.b)+' = '+num(S.res)+' 🎉';
-    } else if (needBorrow()){
-      t = 'En '+NAMES[S.pos].toLowerCase()+' no se puede quitar '+P.b[S.pos]+' a '+eff(S.pos)+'. Pedimos prestado a '+FROM[S.pos+1]+': '+CONV[S.pos+1]+'.';
+    } else if (guidedBorrow){
+      t = 'En '+NAMES[S.pos].toLowerCase()+' ';
+      if (S.lent[S.pos]) t += 'ahora nos queda '+eff(S.pos)+' (antes '+P.a[S.pos]+', porque hemos prestado 1 a '+LOWER[S.pos-1]+') y ';
+      t += 'no se puede quitar '+P.b[S.pos]+' a '+eff(S.pos)+'. Pedimos prestado a '+FROM[S.pos+1]+': '+CONV[S.pos+1]+'.';
+    } else if (solo){
+      t = NAMES[S.pos]+': ' + (add ? 'escribe la cifra y, si te llevas algo, ponlo arriba.' : 'resuelve esta columna. Si no se puede, ¡pide prestado!');
     } else if (add){
       t = NAMES[S.pos]+': '+P.a[S.pos]+' + '+P.b[S.pos]+(S.carry ? ' + '+S.carry+' (llevada)' : '')+' = ?';
     } else {
@@ -194,24 +219,25 @@
     }
     promptEl.textContent = t;
 
-    primaryBtn.textContent = S.done ? 'Otro ejercicio ➜' : needBorrow() ? 'Pedir prestado' : 'Comprobar';
+    primaryBtn.textContent = S.done ? 'Otro ejercicio ➜' : guidedBorrow ? 'Pedir prestado' : 'Comprobar';
+    borrowBtn.hidden = !(solo && !add && asking);
     hintBtn.hidden = !asking;
     skipBtn.hidden = S.done;
 
     if (inp) inp.focus({preventScroll:true});
-    else if (S.done || needBorrow()) primaryBtn.focus({preventScroll:true});
+    else if (S.done || guidedBorrow) primaryBtn.focus({preventScroll:true});
   }
 
   function primary(){
     if (S.done) return newProblem();
-    if (needBorrow()) return doBorrow();
+    if (P.mode!=='solo' && needBorrow()) return doBorrow();
     check();
   }
 
-  function doBorrow(){
+  function doBorrow(prefix){
     S.borrowed[S.pos] = true;
     S.lent[S.pos+1] = true;
-    say('¡Hecho! Ahora arriba tenemos '+eff(S.pos)+'.', 'ok');
+    say((typeof prefix==='string' ? prefix : '¡Hecho! ')+'Ahora arriba tenemos '+eff(S.pos)+'.', 'ok');
     render();
   }
 
@@ -220,10 +246,21 @@
     if (!inp) return;
     var v = parseInt(inp.value,10);
     if (isNaN(v)){ inp.focus(); return; }
-    var exp = expected(), pos = S.pos;
+    var exp = expected(), pos = S.pos, solo = P.mode==='solo';
+    if (solo && P.op==='+'){
+      var ci = $('carryIn'), cv = ci && ci.value!=='' ? parseInt(ci.value,10) : 0;
+      if (v !== exp % 10){
+        S.errors++; say('Esa cifra no es. ¡Prueba otra vez! 💪', 'bad'); inp.select(); return;
+      }
+      if (cv !== (exp >= 10 ? 1 : 0)){
+        S.errors++; say('La cifra está bien. Revisa si te llevas algo 🤔', 'bad'); if (ci) ci.select(); return;
+      }
+      v = exp;
+    }
     if (v !== exp){
       S.errors++;
-      say(v > exp ? 'Te has pasado un poco. ¡Prueba otra vez! 💪' : 'Todavía no llegas. ¡Prueba otra vez! 💪', 'bad');
+      if (solo && P.op==='-' && needBorrow()) say('¿Se puede quitar '+P.b[pos]+' a '+eff(pos)+'? Piensa qué puedes hacer 🤔', 'bad');
+      else say(v > exp ? 'Te has pasado un poco. ¡Prueba otra vez! 💪' : 'Todavía no llegas. ¡Prueba otra vez! 💪', 'bad');
       inp.select();
       return;
     }
@@ -251,13 +288,26 @@
   function hint(){
     var inp = $('ans'); if (!inp) return;
     S.errors++;
-    inp.value = expected();
+    if (P.mode==='solo' && P.op==='-' && needBorrow()){
+      doBorrow('Pista: aquí hay que pedir prestado. ');
+      return;
+    }
+    var exp = expected(), ci = $('carryIn');
+    if (P.mode==='solo' && P.op==='+'){ inp.value = exp % 10; if (ci) ci.value = exp >= 10 ? 1 : ''; }
+    else inp.value = exp;
     say('Esta es la respuesta. Pulsa «Comprobar» para seguir.', '');
     inp.focus();
   }
 
+  function manualBorrow(){
+    if (S.done) return;
+    if (needBorrow()) doBorrow();
+    else { S.errors++; say('Aquí no hace falta pedir prestado: ¡ya se puede restar!', 'bad'); }
+  }
+
   primaryBtn.addEventListener('click', primary);
   hintBtn.addEventListener('click', hint);
+  borrowBtn.addEventListener('click', manualBorrow);
   skipBtn.addEventListener('click', newProblem);
 
   Array.prototype.forEach.call(document.querySelectorAll('.seg'), function(group){
