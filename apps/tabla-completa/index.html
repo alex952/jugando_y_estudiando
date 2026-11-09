@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi tabla</title>
+<style>
+  :root{--bg:#fff8ec;--ink:#2b2a33;--muted:#6b6878;--card:#fff;--line:#f0e2c8;--accent:#ff6b4a;--accent-d:#e0502f;--ok:#1f9d63;--bad:#d6453d}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;justify-content:center;padding:18px 12px 40px}
+  main{width:100%;max-width:440px;text-align:center}
+  h1{font-size:1.6rem;margin:4px 0 12px}
+  [hidden]{display:none !important}
+  .chips{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+  .chip{font:inherit;font-weight:800;font-size:1.25rem;padding:9px 0;border-radius:14px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .opts{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:12px}
+  .seg{display:inline-flex;background:#fff;border:2px solid var(--line);border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:.92rem;padding:6px 14px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .stage{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:14px 14px 16px}
+  .title{font-size:1.15rem;font-weight:800;margin:0 0 8px}
+  .table{display:flex;flex-direction:column;gap:6px}
+  .line{display:grid;grid-template-columns:1fr 24px 86px;align-items:center;gap:6px;background:#fffdf7;border:2px solid var(--line);border-radius:14px;padding:4px 12px;
+        font-size:1.7rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .line .l{text-align:right}
+  .line .eq{color:var(--muted)}
+  .line .r{text-align:left;min-height:44px;display:flex;align-items:center}
+  .line.done{border-color:#b7e3cd;background:#effaf4}
+  .line.done .r{color:var(--ok)}
+  .line.shown .r{color:var(--ink)}
+  .line input{width:84px;font:inherit;font-size:1.6rem;font-weight:800;text-align:center;padding:4px 2px;border:3px solid var(--accent);border-radius:12px;background:#fff;color:var(--ink)}
+  .line input:focus{outline:none;box-shadow:0 0 0 4px #ff6b4a33}
+  .line input.bad{border-color:var(--bad);background:#fff1f0;animation:shake .25s}
+  .line input::placeholder{color:#c9c4d6}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .feedback{min-height:2.2rem;font-size:1.05rem;font-weight:700;margin:12px 4px 4px}
+  .ok{color:var(--ok)}
+  button.main{font:inherit;font-weight:700;font-size:1.1rem;color:#fff;background:var(--accent);border:0;border-radius:14px;padding:12px 20px;cursor:pointer;box-shadow:0 4px 0 var(--accent-d);width:100%;margin-top:6px}
+  button.main:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-d)}
+  button.alt{font:inherit;font-weight:700;font-size:1rem;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:14px;padding:9px 18px;cursor:pointer;width:100%;margin-top:8px}
+  .back{display:inline-block;margin-top:18px;color:var(--muted);font-size:.9rem}
+  @media (prefers-reduced-motion:reduce){.line input.bad{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>📋 Mi tabla</h1>
+
+  <div class="chips" id="chips" role="group" aria-label="Tabla"></div>
+
+  <div class="opts">
+    <div class="seg" id="mode" role="group" aria-label="Qué quieres hacer">
+      <button data-v="ver" aria-pressed="false">👀 Ver la tabla</button>
+      <button data-v="practicar" aria-pressed="true">✏️ Practicar</button>
+    </div>
+    <div id="practiceOpts" style="display:flex;flex-direction:column;gap:8px;align-items:center">
+      <div class="seg" id="fill" role="group" aria-label="Huecos">
+        <button data-v="todo" aria-pressed="true">Completa</button>
+        <button data-v="huecos" aria-pressed="false">Con huecos</button>
+      </div>
+      <div class="seg" id="order" role="group" aria-label="Orden">
+        <button data-v="orden" aria-pressed="true">En orden</button>
+        <button data-v="desorden" aria-pressed="false">Desordenada</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="stage">
+    <div class="title" id="title"></div>
+    <div class="table" id="table"></div>
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <button class="main" id="again" hidden>Otra vez ➜</button>
+    <button class="alt" id="peek" hidden>Ver las soluciones</button>
+  </section>
+
+  <a class="back" href="../../">← Todas las aplicaciones</a>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var cfg = {t:3, mode:'practicar', fill:'todo', order:'orden'};
+  var R = null; // estado de la ronda
+  function rd(lo,hi){ return lo + Math.floor(Math.random()*(hi-lo+1)); }
+  function shuffle(a){ for (var i=a.length-1;i>0;i--){ var j=rd(0,i), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function say(t, cls){ var f=$('feedback'); f.textContent=t; f.className='feedback'+(cls?' '+cls:''); }
+
+  // selector de tabla
+  var chips = $('chips');
+  for (var n=1;n<=10;n++){
+    (function(n){
+      var b = document.createElement('button');
+      b.className='chip'; b.textContent=n; b.setAttribute('aria-pressed', n===cfg.t?'true':'false');
+      b.addEventListener('click', function(){
+        cfg.t = n;
+        Array.prototype.forEach.call(chips.children, function(x,i){ x.setAttribute('aria-pressed', i+1===n?'true':'false'); });
+        start();
+      });
+      chips.appendChild(b);
+    })(n);
+  }
+  function group(id, key){
+    var g = $(id);
+    Array.prototype.forEach.call(g.querySelectorAll('button'), function(b){
+      b.addEventListener('click', function(){
+        cfg[key] = b.getAttribute('data-v');
+        Array.prototype.forEach.call(g.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+        start();
+      });
+    });
+  }
+  group('mode','mode'); group('fill','fill'); group('order','order');
+
+  function row(b, kind, ans){
+    // kind: 'show' (se ve el resultado) | 'blank' (hay que escribirlo)
+    var line = document.createElement('div'); line.className = 'line'+(kind==='show'?' shown':'');
+    var l = document.createElement('div'); l.className='l'; l.textContent = cfg.t+' × '+b;
+    var eq = document.createElement('div'); eq.className='eq'; eq.textContent='=';
+    var r = document.createElement('div'); r.className='r';
+    line.appendChild(l); line.appendChild(eq); line.appendChild(r);
+    if (kind==='show') r.textContent = ans;
+    return {line:line, r:r, b:b, ans:ans, kind:kind, done:kind==='show'};
+  }
+
+  function start(){
+    var ver = cfg.mode==='ver';
+    $('practiceOpts').hidden = ver;
+    $('title').textContent = ver ? 'La tabla del '+cfg.t : 'Tabla del '+cfg.t+' — escribe los resultados';
+    var bs = []; for (var b=1;b<=10;b++) bs.push(b);
+    if (!ver && cfg.order==='desorden') shuffle(bs);
+    var blankSet = {};
+    if (!ver){
+      if (cfg.fill==='todo') bs.forEach(function(b){ blankSet[b]=true; });
+      else { var k = rd(4,6); shuffle(bs.slice()).slice(0,k).forEach(function(b){ blankSet[b]=true; }); }
+    }
+    var tb = $('table'); tb.innerHTML='';
+    R = {rows:[], errors:0, peeked:false, finished:false};
+    bs.forEach(function(b){
+      var o = row(b, blankSet[b] ? 'blank' : 'show', cfg.t*b);
+      R.rows.push(o); tb.appendChild(o.line);
+      if (o.kind==='blank') makeInput(o);
+    });
+    $('again').hidden = true; $('peek').hidden = ver; $('peek').textContent = 'Ver las soluciones';
+    say(ver ? '' : 'Escribe cada resultado. ¡Se corrige solo!', '');
+    focusNext();
+  }
+
+  function makeInput(o){
+    var inp = document.createElement('input');
+    inp.type='text'; inp.inputMode='numeric'; inp.autocomplete='off'; inp.maxLength = String(o.ans).length;
+    inp.setAttribute('aria-label', cfg.t+' por '+o.b);
+    inp.addEventListener('input', function(){
+      inp.value = inp.value.replace(/[^0-9]/g,'');
+      inp.classList.remove('bad');
+      if (inp.value.length < String(o.ans).length) return;
+      if (parseInt(inp.value,10) === o.ans){
+        o.done = true; o.line.className = 'line done'; o.r.textContent = o.ans;
+        check();
+      } else {
+        R.errors++; inp.classList.add('bad'); inp.select();
+      }
+    });
+    o.input = inp; o.r.appendChild(inp);
+  }
+
+  function focusNext(){
+    for (var i=0;i<R.rows.length;i++){
+      var o = R.rows[i];
+      if (o.kind==='blank' && !o.done && o.input){ o.input.focus({preventScroll:true}); return; }
+    }
+  }
+  function check(){
+    if (R.rows.every(function(o){ return o.done; })){
+      R.finished = true;
+      say(R.errors===0 && !R.peeked ? '¡Tabla del '+cfg.t+' perfecta, sin ningún fallo! ⭐' :
+          '¡Tabla del '+cfg.t+' completada! 🎉' + (R.errors ? ' ('+R.errors+(R.errors===1?' fallo':' fallos')+')' : '') + (R.peeked ? ' (con ayuda)' : ''), 'ok');
+      $('again').hidden = false; $('peek').hidden = true; $('again').focus({preventScroll:true});
+    } else focusNext();
+  }
+
+  $('peek').addEventListener('click', function(){
+    if (!R || R.finished) return;
+    R.peeked = !R.peeked;
+    R.rows.forEach(function(o){
+      if (o.kind==='blank' && !o.done) o.input.placeholder = R.peeked ? String(o.ans) : '';
+    });
+    $('peek').textContent = R.peeked ? 'Ocultar las soluciones' : 'Ver las soluciones';
+    focusNext();
+  });
+  $('again').addEventListener('click', start);
+
+  start();
+})();
+</script>
+</body>
+</html>

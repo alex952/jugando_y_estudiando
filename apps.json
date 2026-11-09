@@ -4,27 +4,56 @@
     "title": "Dados de multiplicar",
     "emoji": "🎲",
     "description": "Tira dos dados y calcula el producto.",
-    "topic": "Matemáticas"
+    "topic": "Matemáticas",
+    "tags": [
+      "Multiplicar",
+      "Tablas",
+      "Juegos"
+    ]
   },
   {
     "folder": "sumas-restas",
     "title": "Sumas y restas paso a paso",
     "emoji": "➕",
     "description": "Operaciones en columnas, con o sin llevadas, columna a columna.",
-    "topic": "Matemáticas"
+    "topic": "Matemáticas",
+    "tags": [
+      "Sumas",
+      "Restas",
+      "Llevadas"
+    ]
   },
   {
     "folder": "tablas-crono",
     "title": "Tablas con cronómetro",
     "emoji": "⏱️",
     "description": "Elige tablas y contrarreloj: 60 segundos o 10 preguntas.",
-    "topic": "Matemáticas"
+    "topic": "Matemáticas",
+    "tags": [
+      "Multiplicar",
+      "Tablas",
+      "Cronómetro"
+    ]
+  },
+  {
+    "folder": "tabla-completa",
+    "title": "Mi tabla",
+    "emoji": "📋",
+    "description": "Mira una tabla o complétala: entera o con huecos, en orden o desordenada.",
+    "topic": "Matemáticas",
+    "tags": [
+      "Multiplicar",
+      "Tablas"
+    ]
   },
   {
     "folder": "fracciones",
     "title": "Fracciones",
     "emoji": "🍕",
     "description": "Leer, pintar, comparar y calcular la fracción de un número.",
-    "topic": "Matemáticas"
+    "topic": "Matemáticas",
+    "tags": [
+      "Fracciones"
+    ]
   }
 ]

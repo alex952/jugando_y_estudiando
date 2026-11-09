@@ -3,49 +3,128 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Repaso en casa</title>
+<title>Jugando y estudiando</title>
 <style>
   :root{--bg:#fff8ec;--ink:#2b2a33;--muted:#6b6878;--card:#fff;--line:#f0e2c8;--accent:#ff6b4a}
   *{box-sizing:border-box}
   body{margin:0;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:24px 14px 48px}
-  main{max-width:720px;margin:0 auto}
+  main{max-width:760px;margin:0 auto}
   h1{font-size:1.9rem;margin:0 0 4px;text-align:center}
-  .sub{color:var(--muted);text-align:center;margin:0 0 24px}
+  .sub{color:var(--muted);text-align:center;margin:0 0 20px}
+  .filters{display:flex;flex-direction:column;gap:8px;margin-bottom:22px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+  .chips .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-right:4px}
+  .chip{font:inherit;font-size:.92rem;padding:6px 14px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .chip.tag{font-size:.85rem;padding:4px 11px}
+  .chip.tag[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+  section.topic{margin-bottom:26px}
+  section.topic h2{font-size:1.15rem;margin:0 0 10px;padding-bottom:6px;border-bottom:3px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+  section.topic h2 small{font-size:.8rem;color:var(--muted);font-weight:400}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
-  a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 4px 0 var(--line);transition:transform .1s}
+  a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 4px 0 var(--line);transition:transform .1s}
   a.card:hover,a.card:focus-visible{transform:translateY(-3px);border-color:var(--accent);outline:none}
-  .emoji{font-size:2.4rem}
-  .card h2{font-size:1.1rem;margin:8px 0 4px}
-  .card p{margin:0;color:var(--muted);font-size:.92rem}
-  .tag{display:inline-block;margin-top:10px;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;background:#fff1e0;border-radius:999px;padding:3px 9px;color:#9a5b12}
+  .emoji{font-size:2.3rem}
+  .card h3{font-size:1.08rem;margin:6px 0 4px}
+  .card p{margin:0 0 10px;color:var(--muted);font-size:.9rem}
+  .tags{display:flex;flex-wrap:wrap;gap:5px}
+  .tags span{font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;background:#fff1e0;border-radius:999px;padding:2px 8px;color:#9a5b12}
   .empty{text-align:center;color:var(--muted)}
+  [hidden]{display:none !important}
 </style>
 </head>
 <body>
 <main>
-  <h1>📚 Repaso en casa</h1>
+  <h1>📚 Jugando y estudiando</h1>
   <p class="sub">Pequeñas aplicaciones para practicar jugando.</p>
-  <div class="grid" id="grid"></div>
-  <p class="empty" id="empty" hidden>Todavía no hay aplicaciones.</p>
+  <div class="filters">
+    <div class="chips" id="topics" role="group" aria-label="Asignatura"></div>
+    <div class="chips" id="tags" role="group" aria-label="Etiquetas"></div>
+  </div>
+  <div id="sections"></div>
+  <p class="empty" id="empty" hidden>No hay aplicaciones con ese filtro.</p>
 </main>
 <script>
-fetch('apps.json').then(function(r){return r.json()}).then(function(apps){
-  var grid=document.getElementById('grid');
-  if(!apps.length){document.getElementById('empty').hidden=false;return;}
-  apps.forEach(function(a){
-    var el=document.createElement('a');
-    el.className='card';
-    el.href='apps/'+a.folder+'/';
-    var e=document.createElement('div');e.className='emoji';e.textContent=a.emoji||'🧩';
-    var h=document.createElement('h2');h.textContent=a.title;
-    var p=document.createElement('p');p.textContent=a.description||'';
-    el.appendChild(e);el.appendChild(h);el.appendChild(p);
-    if(a.topic){var t=document.createElement('span');t.className='tag';t.textContent=a.topic;el.appendChild(t);}
-    grid.appendChild(el);
+(function(){
+  var apps = [], state = {topic:'', tag:''};
+  var $ = function(id){ return document.getElementById(id); };
+
+  function topicOf(a){ return a.topic || 'Otras'; }
+  function uniq(list){ return list.filter(function(x,i){ return list.indexOf(x)===i; }); }
+  function inTopic(a){ return !state.topic || topicOf(a)===state.topic; }
+  function matches(a){ return inTopic(a) && (!state.tag || (a.tags||[]).indexOf(state.tag)>=0); }
+
+  function chip(label, pressed, cls, onClick){
+    var b = document.createElement('button');
+    b.className = 'chip'+(cls?' '+cls:''); b.textContent = label;
+    b.setAttribute('aria-pressed', pressed ? 'true':'false');
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function lbl(text){ var s=document.createElement('span'); s.className='lbl'; s.textContent=text; return s; }
+
+  function syncUrl(){
+    try {
+      var q = [];
+      if (state.topic) q.push('tema='+encodeURIComponent(state.topic));
+      if (state.tag) q.push('etiqueta='+encodeURIComponent(state.tag));
+      history.replaceState(null,'', location.pathname + (q.length ? '?'+q.join('&') : ''));
+    } catch(e){}
+  }
+  function readUrl(){
+    try {
+      var p = new URLSearchParams(location.search);
+      state.topic = p.get('tema') || ''; state.tag = p.get('etiqueta') || '';
+    } catch(e){}
+  }
+
+  function render(){
+    var topics = uniq(apps.map(topicOf));
+    if (state.topic && topics.indexOf(state.topic)<0) state.topic = '';
+    var tags = uniq([].concat.apply([], apps.filter(inTopic).map(function(a){ return a.tags||[]; }))).sort(function(a,b){ return a.localeCompare(b,'es'); });
+    if (state.tag && tags.indexOf(state.tag)<0) state.tag = '';
+
+    var tc = $('topics'); tc.innerHTML=''; tc.appendChild(lbl('Asignatura'));
+    tc.appendChild(chip('Todas', !state.topic, '', function(){ state.topic=''; state.tag=''; render(); }));
+    topics.forEach(function(t){ tc.appendChild(chip(t, state.topic===t, '', function(){ state.topic=t; state.tag=''; render(); })); });
+
+    var gc = $('tags'); gc.innerHTML=''; gc.hidden = tags.length===0;
+    gc.appendChild(lbl('Etiqueta'));
+    gc.appendChild(chip('Todas', !state.tag, 'tag', function(){ state.tag=''; render(); }));
+    tags.forEach(function(t){ gc.appendChild(chip(t, state.tag===t, 'tag', function(){ state.tag=t; render(); })); });
+
+    var box = $('sections'); box.innerHTML=''; var shown = 0;
+    topics.forEach(function(t){
+      var list = apps.filter(function(a){ return topicOf(a)===t && matches(a); });
+      if (!list.length) return;
+      shown += list.length;
+      var sec = document.createElement('section'); sec.className='topic';
+      var h = document.createElement('h2'); h.textContent = t;
+      var n = document.createElement('small'); n.textContent = list.length + (list.length===1 ? ' app' : ' apps'); h.appendChild(n);
+      sec.appendChild(h);
+      var g = document.createElement('div'); g.className='grid';
+      list.forEach(function(a){
+        var el = document.createElement('a'); el.className='card'; el.href='apps/'+a.folder+'/';
+        var e = document.createElement('div'); e.className='emoji'; e.textContent = a.emoji||'🧩';
+        var t3 = document.createElement('h3'); t3.textContent = a.title;
+        var p = document.createElement('p'); p.textContent = a.description||'';
+        var tg = document.createElement('div'); tg.className='tags';
+        (a.tags||[]).forEach(function(x){ var s=document.createElement('span'); s.textContent=x; tg.appendChild(s); });
+        el.appendChild(e); el.appendChild(t3); el.appendChild(p); el.appendChild(tg);
+        g.appendChild(el);
+      });
+      sec.appendChild(g); box.appendChild(sec);
+    });
+    $('empty').hidden = shown>0;
+    syncUrl();
+  }
+
+  fetch('apps.json').then(function(r){ return r.json(); }).then(function(data){
+    apps = data; readUrl(); render();
+  }).catch(function(){
+    var e = $('empty'); e.textContent = 'No se pudo cargar la lista de aplicaciones.'; e.hidden = false;
   });
-}).catch(function(){
-  var e=document.getElementById('empty');e.textContent='No se pudo cargar la lista de aplicaciones.';e.hidden=false;
-});
+})();
 </script>
 </body>
 </html>
